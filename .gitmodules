@@ -1,0 +1,8 @@
+[submodule "seqr"]
+	path = seqr
+	url = https://github.com/gregsmi/seqr.git
+	branch = feature/azure-enable
+[submodule "seqr-loading-pipelines"]
+	path = seqr-loading-pipelines
+	url = https://github.com/gregsmi/seqr-loading-pipelines.git
+	branch = feature/azure-enable
