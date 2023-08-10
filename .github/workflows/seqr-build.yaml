@@ -15,7 +15,7 @@ jobs:
     - name: 'Set up deployment variables'
       run: |
         # Read in deployment information.
-        cd terraform && source read_deployment_vars.sh
+        pushd terraform && source read_deployment_vars.sh && popd
         echo "STORAGE_ACCOUNT=${STORAGE_ACCOUNT}" >> $GITHUB_ENV
         echo "STATE_CONTAINER=${STATE_CONTAINER}" >> $GITHUB_ENV
 
