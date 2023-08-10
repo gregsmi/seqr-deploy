@@ -1,9 +1,7 @@
 # Reads the latest built SEQR version from the state store.
 data "external" "seqr_version" {
   program = ["bash", "./get_version.sh"]
-  query = {
-    blob_name = "seqr.version"
-  }
+  query = { blob_name = "seqr.version" }
 }
 
 # Create the single SEQR container deployment after all prerequisite services.
