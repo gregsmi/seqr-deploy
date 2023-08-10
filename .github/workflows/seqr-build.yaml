@@ -42,7 +42,8 @@ jobs:
           echo ${IMAGE_TAG} | az storage blob upload --data @- \
             --account-name ${STORAGE_ACCOUNT} \
             --container-name ${STATE_CONTAINER} \
-            --name seqr.version
+            --name seqr.version \
+            --auth-mode login
     
     - name: 'Log in to ACR'
       uses: azure/docker-login@v1
