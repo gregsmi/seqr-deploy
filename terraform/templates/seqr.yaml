@@ -7,6 +7,7 @@ ingress:
   className: nginx
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/whitelist-source-range: ${whitelisted_cidrs}
   hosts:
   - host: ${fqdn}
     paths:

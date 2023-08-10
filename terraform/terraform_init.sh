@@ -183,11 +183,7 @@ main() {
     esac
   done
 
-  local RESOURCE_GROUP_NAME="${DEPLOYMENT_NAME}-rg"
-  local STORAGE_ACCOUNT="${DEPLOYMENT_NAME}sa"
-  local CONTAINER_NAME="tfstate"
-  local SA_ACCESS_KEY
-
+  echo "DEPLOYMENT_NAME = $DEPLOYMENT_NAME, LOCATION = $LOCATION"
   # Login to Azure using the specified tenant if not already logged in.
   login_azure ${AAD_TENANT} ${AZURE_SUBSCRIPTION}
   # Create resource group if it doesn't exist.
@@ -195,7 +191,7 @@ main() {
   # Create storage account for Terraform state if it doesn't exist.
   ensure_storage_account ${STORAGE_ACCOUNT} ${RESOURCE_GROUP_NAME} ${LOCATION} ${create_resources} || exit
   # Create tfstate container to store Terraform state if it doesn't exist.
-  ensure_storage_container ${CONTAINER_NAME} ${STORAGE_ACCOUNT} ${create_resources} || exit
+  ensure_storage_container ${STATE_CONTAINER} ${STORAGE_ACCOUNT} ${create_resources} || exit
   # Get an access key to the storage account for Terraform state. Use jq to grab the 
   # "value" field of the first key. "-r" option gives raw output without quotes.
   SA_ACCESS_KEY=$(az storage account keys list --resource-group ${RESOURCE_GROUP_NAME} \
@@ -213,37 +209,12 @@ main() {
   # store state. This configuration is persisted in local tfstate.
   terraform init -reconfigure -upgrade \
     -backend-config="storage_account_name=${STORAGE_ACCOUNT}" \
-    -backend-config="container_name=${CONTAINER_NAME}" \
+    -backend-config="container_name=${STATE_CONTAINER}" \
     -backend-config="access_key=${SA_ACCESS_KEY}" \
     -backend-config="key=deploy.tfstate"
 
   # Create/update Terraform variables file.
   make_tfvars
-}
-
-read_deployment_vars() {
-  # Load variables we need from a .env file if specified. Sourcing it as a script.
-  if [[ -f deployment.env ]]; then
-    echo "Found deployment.env file - sourcing it..."
-    source "deployment.env"
-  fi
-
-  # Check required variables.
-  if [[ -z "$AAD_TENANT" ]]; then
-    err "Missing variable AAD_TENANT (specify via environment or '.env' file)"
-  fi
-  if [[ -z "$AZURE_SUBSCRIPTION" ]]; then
-    err "Missing variable AZURE_SUBSCRIPTION (specify via environment or '.env' file)"
-  fi
-  if [[ -z "$DEPLOYMENT_NAME" ]]; then
-    err "Missing variable DEPLOYMENT_NAME (specify via environment or '.env' file)"
-  fi
-  if [[ -z "$LOCATION" ]]; then
-    err "Missing variable LOCATION (specify via environment or '.env' file)"
-  fi
-
-  # TODO, deployment name validity check
-  echo "DEPLOYMENT_NAME = $DEPLOYMENT_NAME, LOCATION = $LOCATION"
 }
 
 delete_terraform_state() {
@@ -256,6 +227,6 @@ delete_terraform_state() {
 # Make pipelined operations fail out early.
 set -o pipefail
 # Read variables from .env file.
-read_deployment_vars
+source read_deployment_vars.sh
 # Run main.
 main "$@"

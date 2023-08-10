@@ -47,3 +47,8 @@ output "hadoop_core_site_xml" {
   value       = local.hadoop_core_site_xml
   sensitive   = true
 }
+
+output "seqr_version" {
+  description = "The current version of the SEQR web container."
+  value       = coalesce(data.external.seqr_version.result.version, "SEQR container not built yet.")
+}
