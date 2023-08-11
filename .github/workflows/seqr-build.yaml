@@ -2,7 +2,7 @@ name: Build latest SEQR docker images
 on: workflow_dispatch
 
 jobs:
-  deploy_server:
+  build_and_push:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,7 +24,7 @@ jobs:
         echo "CLIENT_PWD=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientSecret')" >> $GITHUB_ENV
 
         # Set up image name and tag.
-        AZURE_CR=${DEPLOYMENT_NAME}acr
+        AZURE_CR=${DEPLOYMENT_NAME}acr.azurecr.io
         echo "AZURE_CR=${AZURE_CR}" >> $GITHUB_ENV
         BUILDTAG=$(TZ=America/Los_Angeles date +'%y%m%d-%H%M%S')
         echo "Build/push ${AZURE_CR}/seqr:${BUILDTAG}"
