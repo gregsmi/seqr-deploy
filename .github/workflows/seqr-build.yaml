@@ -25,6 +25,7 @@ jobs:
 
         # Set up image name and tag.
         AZURE_CR=${DEPLOYMENT_NAME}acr
+        echo "AZURE_CR=${AZURE_CR}" >> $GITHUB_ENV
         BUILDTAG=$(TZ=America/Los_Angeles date +'%y%m%d-%H%M%S')
         echo "Build/push ${AZURE_CR}/seqr:${BUILDTAG}"
         echo "SEQR_IMAGE=${AZURE_CR}/seqr" >> $GITHUB_ENV
@@ -35,22 +36,15 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # - name: 'Upload version file to blob storage'
-    #   uses: azure/CLI@v1
-    #   with:
-    #     inlineScript: |
-    #       echo ${IMAGE_TAG} | az storage blob upload --data @- \
-    #         --account-name ${STORAGE_ACCOUNT} \
-    #         --container-name ${STATE_CONTAINER} \
-    #         --name seqr.version \
-    #         --auth-mode login
-
     - name: 'Upload version file to blob storage'
-      uses: github-developer/upload-azure-blob@v1
+      uses: azure/CLI@v1
       with:
-        account: ${{ env.STORAGE_ACCOUNT }}
-        destination: ${{ env.STATE_CONTAINER }}
-        source: README.md
+        inlineScript: |
+          echo ${IMAGE_TAG} | az storage blob upload --data @- \
+            --account-name ${STORAGE_ACCOUNT} \
+            --container-name ${STATE_CONTAINER} \
+            --name seqr.version \
+            --auth-mode login
 
     - name: 'Log in to ACR'
       uses: azure/docker-login@v1
