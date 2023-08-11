@@ -31,21 +31,6 @@ jobs:
         echo "SEQR_IMAGE=${AZURE_CR}/seqr" >> $GITHUB_ENV
         echo "IMAGE_TAG=${BUILDTAG}" >> $GITHUB_ENV
 
-    - name: 'Log in to Azure'
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: 'Upload version file to blob storage'
-      uses: azure/CLI@v1
-      with:
-        inlineScript: |
-          echo ${IMAGE_TAG} | az storage blob upload --data @- \
-            --account-name ${STORAGE_ACCOUNT} \
-            --container-name ${STATE_CONTAINER} \
-            --name seqr.version \
-            --auth-mode login
-
     - name: 'Log in to ACR'
       uses: azure/docker-login@v1
       with:
@@ -61,3 +46,19 @@ jobs:
           -f seqr/deploy/docker/seqr/Dockerfile seqr
         docker push ${SEQR_IMAGE}:${IMAGE_TAG}
         docker push ${SEQR_IMAGE}:latest
+
+    - name: 'Log in to Azure'
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 'Upload version file to blob storage'
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          echo ${IMAGE_TAG} | az storage blob upload --data @- \
+            --auth-mode login
+            --account-name ${STORAGE_ACCOUNT} \
+            --container-name ${STATE_CONTAINER} \
+            --name seqr.version \
+            --overwrite
