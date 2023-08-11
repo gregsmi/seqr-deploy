@@ -1,16 +1,10 @@
 #!/bin/bash
-
 # This script is used by Terraform to read version files from the deployment state store.
 # Latest build version files are stored by GH Action in the same container as the Terraform state.
 
-err() {
-  echo -e "ERROR: $*" >&2
-  exit 1
-}
-
 set -e
 
-source read_deployment_vars.sh
+source ../set_env.sh
 
 # Script is called by Terraform with the blob_name as an argument.
 eval "$(jq -r '@sh "BLOB_NAME=\(.blob_name)"')"

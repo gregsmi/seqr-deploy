@@ -26,6 +26,20 @@ resource "azurerm_kubernetes_cluster" "cluster" {
   }
 }
 
+resource "azurerm_kubernetes_cluster_node_pool" "compute_pool" {
+  name                  = "compute"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
+  vnet_subnet_id        = var.subnet_id
+  vm_size               = "Standard_E16-8ds_v5"
+
+  enable_auto_scaling = true
+  min_count           = 0
+  max_count           = 3
+
+  node_labels = { "seqr.azure/pooltype" = "compute" }
+  node_taints = [ "seqr.azure/pooltype=compute:NoSchedule" ]
+}
+
 locals {
   config = {
     host = "https://${azurerm_kubernetes_cluster.cluster.fqdn}"

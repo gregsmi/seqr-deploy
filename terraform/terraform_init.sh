@@ -1,20 +1,5 @@
 #!/bin/bash
 
-# ANSI escape codes for coloring.
-readonly ANSI_RED="\033[0;31m"
-readonly ANSI_GREEN="\033[0;32m"
-readonly ANSI_RESET="\033[0;0m"
-
-#######################################
-# Print error message and exit
-# Arguments:
-#   Message to print.
-#######################################
-err() {
-  echo -e "${ANSI_RED}ERROR: $*${ANSI_RESET}" >&2
-  exit 1
-}
-
 #######################################
 # Print script usage
 #######################################
@@ -227,6 +212,6 @@ delete_terraform_state() {
 # Make pipelined operations fail out early.
 set -o pipefail
 # Read variables from .env file.
-source read_deployment_vars.sh
+source ../set_env.sh
 # Run main.
 main "$@"
