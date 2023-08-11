@@ -1,4 +1,4 @@
-name: Build SEQR docker image
+name: Build latest SEQR docker images
 on: workflow_dispatch
 
 jobs:
@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: "checkout seqr repo"
+    - name: "Checkout repo"
       uses: actions/checkout@v3
       with:
         submodules: 'true'
@@ -35,16 +35,23 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    # - name: 'Upload version file to blob storage'
+    #   uses: azure/CLI@v1
+    #   with:
+    #     inlineScript: |
+    #       echo ${IMAGE_TAG} | az storage blob upload --data @- \
+    #         --account-name ${STORAGE_ACCOUNT} \
+    #         --container-name ${STATE_CONTAINER} \
+    #         --name seqr.version \
+    #         --auth-mode login
+
     - name: 'Upload version file to blob storage'
-      uses: azure/CLI@v1
+      uses: github-developer/upload-azure-blob@v1
       with:
-        inlineScript: |
-          echo ${IMAGE_TAG} | az storage blob upload --data @- \
-            --account-name ${STORAGE_ACCOUNT} \
-            --container-name ${STATE_CONTAINER} \
-            --name seqr.version \
-            --auth-mode login
-    
+        account: ${{ env.STORAGE_ACCOUNT }}
+        destination: ${{ env.STATE_CONTAINER }}
+        source: README.md
+
     - name: 'Log in to ACR'
       uses: azure/docker-login@v1
       with:

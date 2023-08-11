@@ -92,5 +92,6 @@ module "ci_cd_sp" {
   display_name = "${var.deployment_name}-gh-deploy"
   role_assignments = [
     { role = "AcrPush", scope = azurerm_container_registry.acr.id },
+    { role = "Storage Blob Data Contributor", scope = data.azurerm_storage_account.main.id },
   ]
 }
