@@ -57,7 +57,7 @@ jobs:
       with:
         inlineScript: |
           echo ${IMAGE_TAG} | az storage blob upload --data @- \
-            --auth-mode login
+            --auth-mode login \
             --account-name ${STORAGE_ACCOUNT} \
             --container-name ${STATE_CONTAINER} \
             --name seqr.version \
