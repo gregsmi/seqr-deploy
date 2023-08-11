@@ -146,7 +146,7 @@ ensure_storage_container() {
 #######################################
 make_tfvars() {
   # Write out new default tfvars file.
-  cat << EOF > terraform.tfvars.json
+  cat << EOF > deployment.auto.tfvars.json
 {
   "deployment_name": "${DEPLOYMENT_NAME}",
   "location": "$LOCATION",
@@ -155,7 +155,7 @@ make_tfvars() {
 }
 EOF
 
-  echo "Variable file terraform.tfvars.json created."
+  echo "Variable file deployment.auto.tfvars.json created."
 }
 
 main() {

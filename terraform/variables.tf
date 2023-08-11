@@ -25,3 +25,9 @@ variable "subscription_id" {
   description = "Subscription in which to create all resources."
   type        = string
 }
+
+variable "whitelisted_cidrs" {
+  description = "Comma-separated list of CIDRs to whitelist for web access to SEQR."
+  default     = "0.0.0.0/0"
+  type        = string
+}

@@ -1,7 +1,7 @@
 # Reads the latest built SEQR version from the state store.
 data "external" "seqr_version" {
   program = ["bash", "./get_version.sh"]
-  query = { blob_name = "seqr.version" }
+  query   = { blob_name = "seqr.version" }
 }
 
 # Create the single SEQR container deployment after all prerequisite services.
@@ -18,7 +18,7 @@ resource "helm_release" "seqr" {
     templatefile("templates/seqr.yaml", {
       service_port      = 8000
       fqdn              = local.fqdn
-      whitelisted_cidrs = local.whitelisted_cidrs
+      whitelisted_cidrs = var.whitelisted_cidrs
       pg_host           = module.postgres_db.credentials.host
       pg_user           = module.postgres_db.credentials.username
       es_host           = local.es_nodename

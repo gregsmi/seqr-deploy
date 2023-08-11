@@ -37,7 +37,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "compute_pool" {
   max_count           = 3
 
   node_labels = { "seqr.azure/pooltype" = "compute" }
-  node_taints = [ "seqr.azure/pooltype=compute:NoSchedule" ]
+  node_taints = ["seqr.azure/pooltype=compute:NoSchedule"]
 }
 
 locals {

@@ -3,4 +3,4 @@
 terraform.tfstate*
 .database*
 out.plan
-terraform.tfvars*
+deployment.auto.tfvars.json
