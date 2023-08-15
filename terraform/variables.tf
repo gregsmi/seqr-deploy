@@ -26,6 +26,7 @@ variable "subscription_id" {
   type        = string
 }
 
+# For a given deployment, put this variable value in a file named whitelist.auto.tfvars.json.
 variable "whitelisted_cidrs" {
   description = "Comma-separated list of CIDRs to whitelist for web access to SEQR."
   default     = "0.0.0.0/0"
