@@ -15,7 +15,7 @@ module "postgres_db" {
   source = "./modules/db"
 
   resource_group = data.azurerm_resource_group.rg
-  server_name    = "seqr-pg"
+  server_name    = "${var.deployment_name}-pg"
   subnet_id      = azurerm_subnet.pg_subnet.id
   database_names = ["reference_data_db", "seqrdb"]
 }

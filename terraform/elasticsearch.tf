@@ -81,7 +81,7 @@ resource "helm_release" "elasticsearch" {
   repository = "https://helm.elastic.co"
   chart      = "elasticsearch"
   version    = "8.5.1"
-  timeout    = 420
+  timeout    = 480
 
   values = [
     templatefile("templates/elastic.yaml", {
