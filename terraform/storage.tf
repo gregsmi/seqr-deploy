@@ -9,7 +9,6 @@ data "azurerm_storage_account" "main" {
 resource "azurerm_storage_container" "reference" {
   name                  = "reference"
   storage_account_name  = data.azurerm_storage_account.main.name
-  container_access_type = "blob"
 }
 
 # Reference to storage accounts where data may be pulled from by 
