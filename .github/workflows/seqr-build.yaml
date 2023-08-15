@@ -5,6 +5,9 @@ jobs:
   build_and_push:
     runs-on: ubuntu-latest
 
+    environment:
+      name: ${{ github.ref_name }}
+
     steps:
     - name: "Checkout repo"
       uses: actions/checkout@v3
