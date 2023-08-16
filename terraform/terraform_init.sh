@@ -89,7 +89,7 @@ ensure_storage_account() {
   # Uses jq to parse the json output and grab the "reason" field. -r for raw so there aren't quotes in the string.
   sa_reason=$(az storage account check-name -n "${storage_account_name}" | jq -r .reason)
   if [[ $? -ne 0 ]]; then
-    err "Failed to check for existence of storage account ${storage_account_name}. Probably a permissions issue."
+    err "Failed to check for existence of storage account ${storage_account_name}. Make sure Microsoft.Storage provider is registered."
   fi
 
   if [[ ${sa_reason} == "AlreadyExists" ]]; then
