@@ -4,7 +4,15 @@
 
 set -e
 
-source ../set_env.sh
+err() {
+  echo -e "ERROR: $*" >&2
+  exit 1
+}
+
+if [[ ! -f ../deployment.env ]]; then
+  err "Missing deployment.env."
+fi
+source ../deployment.env
 
 # Script is called by Terraform with the blob_name as an argument.
 eval "$(jq -r '@sh "BLOB_NAME=\(.blob_name)"')"
