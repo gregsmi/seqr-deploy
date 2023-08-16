@@ -4,9 +4,25 @@
 # Print script usage
 #######################################
 usage() {
-  echo "./$(basename $0) -h --> shows usage"
-  echo "./$(basename $0) [-c] --> runs terraform init for the local project"
-  echo "    -c: create mode - one-time init of a new project to create root resources"
+  echo "./$(basename $0) -h   --> show usage"
+  echo "./$(basename $0) -l   --> login-only - login to appropriate subscription/tenant and exit"
+  echo "./$(basename $0) [-c] --> initialize terraform for the local project"
+  echo "    -c: create mode --> one-time init of a new project to create root resources"
+}
+
+# ANSI escape codes for coloring.
+readonly ANSI_RED="\033[0;31m"
+readonly ANSI_GREEN="\033[0;32m"
+readonly ANSI_RESET="\033[0;0m"
+
+#######################################
+# Print error message and exit
+# Arguments:
+#   Message to print.
+#######################################
+err() {
+  echo -e "${ANSI_RED}ERROR: $*${ANSI_RESET}" >&2
+  exit 1
 }
 
 #######################################
@@ -160,10 +176,11 @@ EOF
 
 main() {
   # Process options.
-  while getopts ":hc" option; do
+  while getopts ":hcl" option; do
     case "${option}" in
       h) usage; exit 0;;
       c) create_resources="true";;
+      l) login_only="true";;
       ?) echo "Invalid option: -${OPTARG}."; usage; exit 1;;
     esac
   done
@@ -171,6 +188,10 @@ main() {
   echo "DEPLOYMENT_NAME = $DEPLOYMENT_NAME, LOCATION = $LOCATION"
   # Login to Azure using the specified tenant if not already logged in.
   login_azure ${AAD_TENANT} ${AZURE_SUBSCRIPTION}
+  if [[ ${login_only} == "true" ]]; then
+    echo "Successfully logged in - exiting."
+    exit 0
+  fi
   # Create resource group if it doesn't exist.
   ensure_resource_group ${RESOURCE_GROUP_NAME} ${LOCATION} ${create_resources} || exit
   # Create storage account for Terraform state if it doesn't exist.
@@ -211,7 +232,10 @@ delete_terraform_state() {
 
 # Make pipelined operations fail out early.
 set -o pipefail
-# Read variables from .env file.
-source ../set_env.sh
+# Read variables from deployment.env file. Exit if file does not exist.
+if [[ ! -f ../deployment.env ]]; then
+  err "File deployment.env not found. Please create it from template file deployment.template.env."
+fi
+source ../deployment.env
 # Run main.
 main "$@"

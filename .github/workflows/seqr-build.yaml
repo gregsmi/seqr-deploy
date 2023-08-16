@@ -18,7 +18,7 @@ jobs:
     - name: 'Set up deployment variables'
       run: |
         # Read deployment.
-        source set_env.sh
+        source deployment.env
         echo "STORAGE_ACCOUNT=${STORAGE_ACCOUNT}" >> $GITHUB_ENV
         echo "STATE_CONTAINER=${STATE_CONTAINER}" >> $GITHUB_ENV
 
