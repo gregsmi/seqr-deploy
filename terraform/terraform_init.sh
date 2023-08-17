@@ -112,7 +112,7 @@ ensure_storage_account() {
     echo "Storage account ${storage_account_name} exists."
   elif [[ ${create} == "true" ]]; then
     echo "Storage account ${storage_account_name} does not exist - creating..."
-    1>/dev/null az storage account create --name "${storage_account_name}" --resource-group "${resource_group_name}" --location "${location}"
+    1>/dev/null az storage account create --name "${storage_account_name}" --resource-group "${resource_group_name}" --location "${location}" --allow-blob-public-access false
     if [[ $? -ne 0 ]]; then
       err "Failed to create storage group ${storage_account_name}"
     fi
