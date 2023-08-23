@@ -33,11 +33,16 @@ spec:
             mountPath: "/vep_data"
             subPath: "vep/99.0"
           - name: hadoop-creds
-            mountPath: "/spark_configs"
+            mountPath: /spark_configs/core-site.xml
+            subPath: core-site.xml
             readOnly: true
           - name: es-ca-volume
             mountPath: /es-certs
             readOnly: true
+        resources:
+          requests:
+            cpu: "4"
+            memory: "96Gi"
 
       nodeSelector:
         seqr.azure/pooltype: "compute"
