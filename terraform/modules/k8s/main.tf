@@ -17,6 +17,8 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     max_count = 5
   }
 
+  automatic_channel_upgrade = "node-image"
+
   identity {
     type = "SystemAssigned"
   }
