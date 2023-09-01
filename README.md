@@ -32,11 +32,18 @@ This repository is currently configured such that management of all deployments 
 
 ### Security considerations
 
-This infrastructure is configured to comply with ... with the following exceptions.
-- Exception 1
-- Exception 2
+The majority of the infrastructure deployed by this repository is placed in an Azure Virtual Network (VNet). This includes the Kubernetes cluster and the Azure Database for PostgreSQL (Postgres). The only resource within the VNet that is exposed to the public internet is the Kubernetes Load Balancer, which is configured to only allow traffic from a set of allow-listed CIDR blocks. This prevents unauthorized access to the Kubernetes cluster and Postgres which allowing intended users the ability to access the seqr application.
 
-That being said, deployments based on this repository are intended for development purposes only and should not be used for production workloads. Further security review may be necessary before deploying to production.
+Authentication to the seqr application is handled by Azure Active Directory (AAD). This is configured such that only users within the AAD tenant associated with the deployment are able to access the application. Authorization for the application is handled by the application itself, which grants project-level access with varying roles.
+
+Both the Azure Container Registry and Azure Storage account associated with the deployment are necessarily placed outside of the VNet as they must be accessible to GitHub to permit execution of the GitHub actions that build/push docker images associated with the application and store the metadata necessary for deployment. Both authentication and authorization for these actions is handled by AAD.
+
+The infrastructure deployed by this repository is configured to comply with [CIS Microsoft Azure Foundations Benchmark v1.4.0](https://learn.microsoft.com/en-us/azure/governance/policy/samples/cis-azure-1-4-0) (TODO: anything about tenant or sub level requirements here that are out of scope for the terraform?) with the following exeptions.
+
+- *Ensure Default Netowrk Access Rule for Storage Accounts is Set to Deny* - This is necessary to permit GitHub actions to access the storage account associated with the deployment
+- *Ensure 'Enforce SSL connection' is set to 'ENABLED' for PostgreSQL Database Server* - This control is not necessary as the Postgres server is not exposed to the public internet and TLS termination is handled by the Kubernetes cluster's ingress controller.
+
+While the above measures are intended to minimize risk of unwanted access to the application or associated resource, deployments based on this repository are intended for development purposes only and should not be used for production workloads. Further security review may be necessary before deploying to production.
 
 ## Making a new Deployment
 
@@ -89,19 +96,23 @@ In order to complete subsequent steps, the following requirements must be met:
 
     Where `whitelisted_cidrs` is a list of CIDR blocks that will be permitted access to the public facing IP address that is created for the seqr application. Additionally, `data_storage_accounts` is a list of SA / RG pairs that contain data that will be accessed by the seqr-loading-pipeline. The latter are included in this configuration file so that credentials necessary to access this data can be made available to k8s services.
 
-1. Run an initial pass of `terraform apply`. As described above, this will create and configure all of the Azure resources associated with the deployment. It will also apply an initial set of configurations to the kubernetes cluster. At this point, however, terraform will not have all of the necessary information to create the kubernetes objects associated with the seqr application itself; we will revisit this later. 
+1. Run an initial pass of `terraform apply`. As described above, this will create and configure all of the Azure resources associated with the deployment. It will also apply an initial set of configurations to the kubernetes cluster. At this point, however, terraform will not have all of the necessary information to create the kubernetes objects associated with the seqr application itself; we will revisit this later.
 
-    ```bash
-    terraform apply
-    ```
+1. Commit changes on your branch and publish to remote.
 
-1. TODO, something about github actions
+1. [Create a github environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named `env-msseqr03`, restricted to your branch. Permissions to do this are restricted to the repository owner. If you are not the repository owner, please request that they do this for you.
 
-1. Rerun `terraform apply` to complete the deployment. This will create the kubernetes objects associated with the seqr application. After confirming the changes to be made, deployment will take approximately five minutes.
+1. Run `terraform output -json AZURE_CREDENTIALS` and put the result in a new [GitHub Environment Action secret](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository) named `AZURE_CREDENTIALS`. Again, this can only be done by the repository owner.
 
-    ```bash
-    terraform apply
-    ```
+1. Trigger the `Build latest SEQR docker images` GitHub Action on your branch. This will build the latest docker images for the seqr services and push them to the Azure Container Registry (ACR) associated with your deployment. This will take approximately 12 minutes to complete.
 
-1. Commit changes on your branch and publish to GitHub.
+1. Once this has completed successfully, re-run `terraform apply` to complete the deployment. This will create the kubernetes objects associated with the seqr application. After confirming the changes to be made, deployment will take approximately five minutes.
+
 ### Troubleshooting
+
+1. Deploying the seqr environment in your Azure Subscription requires that a number of providers be registered on the subscription. At the very least, this includes `Microsoft.Storage` and probably also `Microsoft.Compute`. You may encounter errors during `terraform apply` if these providers are not registered. If you encounter such an error, you can register the provider using the Azure CLI:
+
+    ```bash
+    az provider register --namespace Microsoft.Storage
+    az provider register --namespace Microsoft.Compute
+    ```
