@@ -1,4 +1,5 @@
 # seqr-deploy
+
 Infrastructure and deployment code for a running SEQR Kubernetes cluster on Azure
 
 ## Introduction
@@ -14,7 +15,8 @@ seqr is a web application for analyzing genomic data. It is composed of a number
 This repository does not contain the source code for the services, instead it references the seqr source via git submodule.
 
 The following image shows the high-level architecture of the deployment:
-TODO IMAGE
+
+![Deployment Architecture](./docs/seqr-azure-diagram.png)
 
 Deployment of a new environment is handled in the following steps:
 
@@ -32,7 +34,7 @@ This repository is currently configured such that management of all deployments 
 
 ### Security considerations
 
-The majority of the infrastructure deployed by this repository is placed in an Azure Virtual Network (VNet). This includes the Kubernetes cluster and the Azure Database for PostgreSQL (Postgres). The only resource within the VNet that is exposed to the public internet is the Kubernetes Load Balancer, which is configured to only allow traffic from a set of allow-listed CIDR blocks. This prevents unauthorized access to the Kubernetes cluster and Postgres which allowing intended users the ability to access the seqr application.
+The majority of the infrastructure deployed by this repository is placed in an Azure Virtual Network (VNet). This includes the Kubernetes cluster and the Azure Database for PostgreSQL (Postgres). The only resource within the VNet that is exposed to the public internet is the Kubernetes Ingress Controller, which is configured to only allow traffic from a set of allow-listed CIDR blocks. This prevents unauthorized access to the Kubernetes cluster and Postgres which allowing intended users the ability to access the seqr application.
 
 Authentication to the seqr application is handled by Azure Active Directory (AAD). This is configured such that only users within the AAD tenant associated with the deployment are able to access the application. Authorization for the application is handled by the application itself, which grants project-level access with varying roles.
 
@@ -61,19 +63,21 @@ In order to complete subsequent steps, the following requirements must be met:
 
 ### Deployment
 
+1. Determine a `$DEPLOYMENT_NAME` for this deployment. This will name be used throughout the deployment process. The deployment name must be unique within this repository and contain only lowercase letters and numbers.
+
 1. Clone this repository
 
     ```bash
     git clone https://github.com/gregsmi/cpg-deploy.git
     ```
 
-1. Create a new branch for your deployment. The naming convention for deployment branches in this repository is `env-msseqrNN`, where `NN` is a two-digit number. For example, if you are creating the 3rd deployment in this repository, you would name your branch `env-msseqr03`. Note that `msseqr03` now the name for this deployment and will be used in subsequent steps.
+1. Create a new branch for your deployment.
 
     ```bash
-    git checkout -b env-msseqr03
+    git checkout -b env-$(DEPLOYMENT_NAME)
     ```
 
-1. Rename `deployment.template.env` to `deployment.env`. Populate `deployment.env` with the `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` that you collected above. Additionally, populate `deployment.env` with values for `DEPLOYMENT_NAME` (`msseqr03` in this example) and `REGION` (`eastus` in this example). This file will make information about your deployment available to Terraform and GitHub Actions.
+1. Rename `deployment.template.env` to `deployment.env`. Populate `deployment.env` with the `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` that you collected above. Additionally, populate `deployment.env` with values for `DEPLOYMENT_NAME` (`$(DEPLOYMENT_NAME)` in this example) and `REGION` (`eastus` in this example). This file will make information about your deployment available to Terraform and GitHub Actions.
 
 1. Run `terraform-init.sh -c` to configure terraform to manage this deployment. This must be run from within the terraform directory. This script will first ensure that the correct Azure resources exist to store the terraform state. This includes a Resource Group (RG) that will eventually house your seqr deployment, a Storage Account (SA) within that RG, and a Container within that SA. After configuring terraform to use that SA to hold terraform state, it will then write out `terraform.tfvars` with the values derived from `deployment.env`. This file will be used by terraform to configure your deployment.
 
@@ -100,7 +104,7 @@ In order to complete subsequent steps, the following requirements must be met:
 
 1. Commit changes on your branch and publish to remote.
 
-1. [Create a github environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named `env-msseqr03`, restricted to your branch. Permissions to do this are restricted to the repository owner. If you are not the repository owner, please request that they do this for you.
+1. [Create a github environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named `env-$(DEPLOYMENT_NAME)`, restricted to your branch. Permissions to do this are restricted to the repository owner. If you are not the repository owner, please request that they do this for you.
 
 1. Run `terraform output -json AZURE_CREDENTIALS` and put the result in a new [GitHub Environment Action secret](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository) named `AZURE_CREDENTIALS`. Again, this can only be done by the repository owner.
 
