@@ -10,11 +10,13 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     name           = "default"
     vm_size        = "Standard_D2_v2"
     vnet_subnet_id = var.subnet_id
+    os_sku         = "AzureLinux"
 
     enable_auto_scaling = true
+    min_count           = 1
+    max_count           = 5
 
-    min_count = 1
-    max_count = 5
+    temporary_name_for_rotation = "tempdefault"
   }
 
   automatic_channel_upgrade = "node-image"
@@ -33,6 +35,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "compute_pool" {
   kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
   vnet_subnet_id        = var.subnet_id
   vm_size               = "Standard_E16-8ds_v5"
+  os_sku                = "AzureLinux"
 
   enable_auto_scaling = true
   min_count           = 0

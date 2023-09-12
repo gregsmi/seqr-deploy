@@ -7,8 +7,8 @@ data "azurerm_storage_account" "main" {
 
 # Create a reference container for k8s mounted ref volumes.
 resource "azurerm_storage_container" "reference" {
-  name                  = "reference"
-  storage_account_name  = data.azurerm_storage_account.main.name
+  name                 = "reference"
+  storage_account_name = data.azurerm_storage_account.main.name
 }
 
 # Reference to storage accounts where data may be pulled from by 
