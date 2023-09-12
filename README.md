@@ -77,7 +77,7 @@ In order to complete subsequent steps, the following requirements must be met:
     git checkout -b env-$(DEPLOYMENT_NAME)
     ```
 
-1. Rename `deployment.template.env` to `deployment.env`. Populate `deployment.env` with the `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` that you collected above. Additionally, populate `deployment.env` with values for `DEPLOYMENT_NAME` (`$(DEPLOYMENT_NAME)` in this example) and `REGION` (`eastus` in this example). This file will make information about your deployment available to Terraform and GitHub Actions.
+1. Rename `deployment.template.env` to `deployment.env`. Populate `deployment.env` with the `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` that you collected above. Additionally, populate `deployment.env` with values for `DEPLOYMENT_NAME` (`$(DEPLOYMENT_NAME)`) and `REGION` (`eastus`). This file will make information about your deployment available to Terraform and GitHub Actions.
 
 1. Run `terraform-init.sh -c` to configure terraform to manage this deployment. This must be run from within the terraform directory. This script will first ensure that the correct Azure resources exist to store the terraform state. This includes a Resource Group (RG) that will eventually house your seqr deployment, a Storage Account (SA) within that RG, and a Container within that SA. After configuring terraform to use that SA to hold terraform state, it will then write out `terraform.tfvars` with the values derived from `deployment.env`. This file will be used by terraform to configure your deployment.
 
@@ -119,7 +119,9 @@ In order to complete subsequent steps, the following requirements must be met:
 
 1. Run `terraform destroy`. This must be run from the terraform directory. 
 
-1. Remove the environment named `env-$(DEPLOYMENT_NAME)`. Permissions to do this are restricted to the repository owner. If you are not the repository owner, please request that they do this for you.
+1. After this operation completes, using either `az cli` or the Azure portal delete the resource group `$(DEPLOYMENT_NAME)-rg` and the storage account contained within.
+
+1. Remove the GitHub environment named `env-$(DEPLOYMENT_NAME)`. Permissions to do this are restricted to the repository owner. If you are not the repository owner, please request that they do this for you.
      
 ### Troubleshooting
 
