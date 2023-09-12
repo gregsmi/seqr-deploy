@@ -10,7 +10,7 @@ The instructions below have been tested on Windows Subsystem for Linux (WSL) run
 
 ## Deployment Overview
 
-seqr is a web application for analyzing genomic data. It is composed of a number of services, each of which is deployed as a containerized application. The services are deployed to a Kubernetes cluster running on Azure. The Kubernetes cluster is managed by Azure Kubernetes Service (AKS). The Kubernetes cluster is deployed and configured using Terraform.
+[seqr](https://seqr.broadinstitute.org/) is a web application for analyzing genomic data. It is composed of a number of services, each of which is deployed as a containerized application. The services are deployed to a Kubernetes cluster running on Azure. The Kubernetes cluster is managed by Azure Kubernetes Service (AKS). The Kubernetes cluster is deployed and configured using Terraform.
 
 This repository does not contain the source code for the services, instead it references the seqr source via git submodule.
 
@@ -21,7 +21,7 @@ The following image shows the high-level architecture of the deployment:
 Deployment of a new environment is handled in the following steps:
 
 - Deploy the Azure resources using Terraform (via `terraform apply`)
-- Generate the docker images for the relevant services (via github actions)
+- Generate the docker images for the relevant services (via GitHub Actions)
 - Deploy the seqr Kubernetes services and objects (again via `terraform apply`)
 
 Each of these steps is discussed in more detail below.
@@ -40,9 +40,9 @@ Authentication to the seqr application is handled by Azure Active Directory (AAD
 
 Both the Azure Container Registry and Azure Storage account associated with the deployment are necessarily placed outside of the VNet as they must be accessible to GitHub to permit execution of the GitHub actions that build/push docker images associated with the application and store the metadata necessary for deployment. Both authentication and authorization for these actions is handled by AAD.
 
-The infrastructure deployed by this repository is configured to comply with [CIS Microsoft Azure Foundations Benchmark v1.4.0](https://learn.microsoft.com/en-us/azure/governance/policy/samples/cis-azure-1-4-0) (TODO: anything about tenant or sub level requirements here that are out of scope for the terraform?) with the following exeptions.
+The infrastructure deployed by this repository is configured to comply with [CIS Microsoft Azure Foundations Benchmark v1.4.0](https://learn.microsoft.com/en-us/azure/governance/policy/samples/cis-azure-1-4-0) with the following exceptions.
 
-- *Ensure Default Netowrk Access Rule for Storage Accounts is Set to Deny* - This is necessary to permit GitHub actions to access the storage account associated with the deployment
+- *Ensure Default Network Access Rule for Storage Accounts is Set to Deny* - This is necessary to permit GitHub actions to access the storage account associated with the deployment
 - *Ensure 'Enforce SSL connection' is set to 'ENABLED' for PostgreSQL Database Server* - This control is not necessary as the Postgres server is not exposed to the public internet and TLS termination is handled by the Kubernetes cluster's ingress controller.
 
 While the above measures are intended to minimize risk of unwanted access to the application or associated resource, deployments based on this repository are intended for development purposes only and should not be used for production workloads. Further security review may be necessary before deploying to production.
@@ -57,7 +57,7 @@ In order to complete subsequent steps, the following requirements must be met:
 
 - (GitHub) You should be a collaborator on this repository
 - (Azure) You should have an Azure subscription
-- (Azure) TODO, something about required roles
+- (Azure) You need to be assigned the Azure AD role `Application Administrator`
 - (Deployment Environment) You should have a Linux environment with the Azure CLI ([instructions](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=apt)) and Terraform ([instructions](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)) installed
 - (Deployment Environment) Login to the Azure CLI using `az login`, note the GUID for your tenant and subscription
 
@@ -112,6 +112,15 @@ In order to complete subsequent steps, the following requirements must be met:
 
 1. Once this has completed successfully, re-run `terraform apply` to complete the deployment. This will create the kubernetes objects associated with the seqr application. After confirming the changes to be made, deployment will take approximately five minutes.
 
+*Note: Any time you update the seqr code for this deployment you will need to re-run the final two steps here.*  
+
+
+### Destruction
+
+1. Run `terraform destroy`. This must be run from the terraform directory. 
+
+1. Remove the environment named `env-$(DEPLOYMENT_NAME)`. Permissions to do this are restricted to the repository owner. If you are not the repository owner, please request that they do this for you.
+     
 ### Troubleshooting
 
 1. Deploying the seqr environment in your Azure Subscription requires that a number of providers be registered on the subscription. At the very least, this includes `Microsoft.Storage` and probably also `Microsoft.Compute`. You may encounter errors during `terraform apply` if these providers are not registered. If you encounter such an error, you can register the provider using the Azure CLI:
