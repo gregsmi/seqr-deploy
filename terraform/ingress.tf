@@ -1,5 +1,6 @@
 locals {
-  fqdn_prefix = var.deployment_name
+  whitelisted_cidrs = join(",", [for o, ip in var.whitelisted_cidr_map : ip])
+  fqdn_prefix       = var.deployment_name
   # Standard format for AKS-provided loadbalancer ingress FQDN.
   fqdn = "${local.fqdn_prefix}.${var.location}.cloudapp.azure.com"
 }

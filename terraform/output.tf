@@ -53,7 +53,7 @@ output "seqr_version" {
   value       = coalesce(data.external.seqr_version.result.version, "SEQR container not built yet.")
 }
 
-output "whitelisted_cidrs" {
+output "whitelisted_cidr_map" {
   description = "The whitelisted CIDRs for the SEQR ingress endpoint."
-  value       = var.whitelisted_cidrs
+  value       = var.whitelisted_cidr_map
 }
