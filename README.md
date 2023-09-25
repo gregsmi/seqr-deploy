@@ -90,7 +90,10 @@ In order to complete subsequent steps, the following requirements must be met:
 
     ```json
         {
-            "whitelisted_cidrs": "1.2.3.4/16,5.6.7.8/16",
+            "whitelisted_cidr_map": {
+                "Contoso Org": "1.2.0.0/16,3.4.0.0/16",
+                "Person 1:": "5.6.7.8"
+            },
             "data_storage_accounts":  { 
                 "firstsa": "firstsa-rg",
                 "secondsa": "secondsa-rg"
@@ -98,7 +101,7 @@ In order to complete subsequent steps, the following requirements must be met:
         }    
     ```
 
-    Where `whitelisted_cidrs` is a list of CIDR blocks that will be permitted access to the public facing IP address that is created for the seqr application. Additionally, `data_storage_accounts` is a list of SA / RG pairs that contain data that will be accessed by the seqr-loading-pipeline. The latter are included in this configuration file so that credentials necessary to access this data can be made available to k8s services.
+    Where `whitelisted_cidr_map` is a map of person/org => CIDR block list that will be permitted access to the public facing IP address that is created for the seqr application. Additionally, `data_storage_accounts` is a map of SA / RG pairs that contain data that will be accessed by the seqr-loading-pipeline. The latter are included in this configuration file so that credentials necessary to access this data can be made available to k8s services.
 
 1. Run an initial pass of `terraform apply`. As described above, this will create and configure all of the Azure resources associated with the deployment. It will also apply an initial set of configurations to the kubernetes cluster. At this point, however, terraform will not have all of the necessary information to create the kubernetes objects associated with the seqr application itself; we will revisit this later.
 

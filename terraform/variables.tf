@@ -30,13 +30,13 @@ variable "subscription_id" {
 
 # This is an optional set of IPs or IP blocks. It is used to control which 
 # client IPs are allowed ingress to the container running the SEQR web interface.
-variable "whitelisted_cidrs" {
-  description = "Comma-separated list of CIDRs to whitelist for web access to SEQR."
-  default     = "0.0.0.0/0"
-  type        = string
+variable "whitelisted_cidr_map" {
+  description = "Map of person/org => comma-separated list of CIDRs to whitelist for web access to SEQR."
+  default     = { everyone = "0.0.0.0/0" }
+  type        = map(string)
 }
 # This is an optional set of mappings from storage account name to storage account resource group.
-# It is used to add permission for the SEQR loader job to read/write dsta files in each storage account.
+# It is used to add permission for the SEQR loader job to read/write data files in each storage account.
 variable "data_storage_accounts" {
   description = "Map from storage account name to storage account resource group for data files."
   type        = map(string)
