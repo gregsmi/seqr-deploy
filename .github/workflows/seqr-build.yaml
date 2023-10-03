@@ -32,6 +32,7 @@ jobs:
         BUILDTAG=$(TZ=America/Los_Angeles date +'%y%m%d-%H%M%S')
         echo "Build/push ${AZURE_CR}/seqr:${BUILDTAG}"
         echo "SEQR_IMAGE=${AZURE_CR}/seqr" >> $GITHUB_ENV
+        echo "SEQR_PIPELINE_IMAGE=${AZURE_CR}/seqr-pipeline" >> $GITHUB_ENV
         echo "IMAGE_TAG=${BUILDTAG}" >> $GITHUB_ENV
 
     - name: 'Log in to ACR'
@@ -41,7 +42,7 @@ jobs:
         username: ${{ env.CLIENT_ID }}
         password: ${{ env.CLIENT_PWD }}
 
-    - name: 'Build and push image'
+    - name: 'Build and push SEQR image'
       run: |
         docker build \
           --tag ${SEQR_IMAGE}:${IMAGE_TAG} \
@@ -49,6 +50,15 @@ jobs:
           -f seqr/deploy/docker/seqr/Dockerfile seqr
         docker push ${SEQR_IMAGE}:${IMAGE_TAG}
         docker push ${SEQR_IMAGE}:latest
+
+    - name: 'Build and push SEQR pipeline image'
+      run: |
+        docker build \
+          --tag ${SEQR_PIPELINE_IMAGE}:${IMAGE_TAG} \
+          --tag ${SEQR_PIPELINE_IMAGE}:latest \
+          -f seqr-loading-pipelines/docker/Dockerfile.azure seqr-loading-pipelines
+        docker push ${SEQR_PIPELINE_IMAGE}:${IMAGE_TAG}
+        docker push ${SEQR_PIPELINE_IMAGE}:latest
 
     - name: 'Log in to Azure'
       uses: azure/login@v1
