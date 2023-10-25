@@ -1,7 +1,7 @@
 [submodule "seqr"]
 	path = seqr
 	url = https://github.com/gregsmi/seqr.git
-	branch = feature/azure-enable
+	branch = feature/evagg-orm
 [submodule "seqr-loading-pipelines"]
 	path = seqr-loading-pipelines
 	url = https://github.com/gregsmi/seqr-loading-pipelines.git
