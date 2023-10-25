@@ -48,6 +48,12 @@ locals {
       azurestorageaccountname = data.azurerm_storage_account.main.name
       azurestorageaccountkey  = data.azurerm_storage_account.main.primary_access_key
     }
+    # Reference secrets for use by the Django reference app within SEQR.
+    reference-secrets = {
+      sp_client_id     = module.reference_sp.credentials.clientId
+      sp_client_secret = module.reference_sp.credentials.clientSecret
+      sp_tenant_id     = module.reference_sp.credentials.tenantId
+    }
   }
 }
 
@@ -93,5 +99,14 @@ module "ci_cd_sp" {
   role_assignments = [
     { role = "AcrPush", scope = azurerm_container_registry.acr.id },
     { role = "Storage Blob Data Contributor", scope = data.azurerm_storage_account.main.id },
+  ]
+}
+
+# Identity used for authenticated pull of reference data.
+module "reference_sp" {
+  source       = "./modules/sp"
+  display_name = "${var.deployment_name}-ref-reader"
+  role_assignments = [
+    { role = "Storage Blob Data Reader", scope = azurerm_storage_container.reference.resource_manager_id },
   ]
 }
