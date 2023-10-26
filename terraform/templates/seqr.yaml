@@ -57,6 +57,21 @@ additional_secrets:
     secretKeyRef:
       name: seqr-secrets
       key: azuread_tenant_id
+- name: AZURE_CLIENT_ID
+  valueFrom:
+    secretKeyRef:
+      name: reference-secrets
+      key: sp_client_id
+- name: AZURE_CLIENT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: reference-secrets
+      key: sp_client_secret
+- name: AZURE_TENANT_ID
+  valueFrom:
+    secretKeyRef:
+      name: reference-secrets
+      key: sp_tenant_id
 
 environment:
  # prod/dev sets DEBUG=false
