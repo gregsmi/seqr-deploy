@@ -12,13 +12,21 @@ spec:
       - "3600"
     imagePullPolicy: IfNotPresent
     name: busybox
+    env:
+      - name: ELASTIC_SEARCH_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: seqr-secrets
+            key: seqr_es_password
+      - name: LUIGI_CONFIG_PATH
+        value: "/luigi_configs/seqr-load-GRCh38.toml"
     volumeMounts:
       - name: ref-blobstore
         mountPath: "/vep_data"
         subPath: "vep/99.0"
-        readOnly: true
       - name: hadoop-creds
-        mountPath: "/spark_configs"
+        mountPath: /spark_configs/core-site.xml
+        subPath: core-site.xml
         readOnly: true
       - name: es-ca-volume
         mountPath: /es-certs
