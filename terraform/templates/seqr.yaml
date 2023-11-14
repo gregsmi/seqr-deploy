@@ -88,3 +88,4 @@ environment:
   # respectively but the default Helm user for ES & kibana is 'elastic'.
   KIBANA_ELASTICSEARCH_USER: elastic
   ELASTICSEARCH_USER: elastic
+  AZURE_REF_STORAGE_ACCOUNT: ${ref_account}
