@@ -14,6 +14,12 @@ output "AZURE_CREDENTIALS" {
   sensitive   = true
 }
 
+output "REFERENCE_CREDENTIALS" {
+  description = "The credentials of the Azure service principal used for reference storage account access."
+  value       = module.reference_sp.credentials
+  sensitive   = true
+}
+
 output "ELASTICSEARCH_CREDENTIALS" {
   description = "The credentials of the Elasticsearch cluster."
   value = {
