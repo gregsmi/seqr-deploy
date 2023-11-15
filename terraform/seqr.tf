@@ -24,7 +24,7 @@ resource "helm_release" "seqr" {
       es_host           = local.es_nodename
       image_repo        = "${azurerm_container_registry.acr.login_server}/seqr"
       image_tag         = data.external.seqr_version.result.version
-      ref_account       = azurerm_storage_account.main.name
+      ref_account       = data.azurerm_storage_account.main.name
     })
   ]
 
