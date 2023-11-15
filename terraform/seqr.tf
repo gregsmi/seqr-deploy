@@ -18,12 +18,13 @@ resource "helm_release" "seqr" {
     templatefile("templates/seqr.yaml", {
       service_port      = 8000
       fqdn              = local.fqdn
-      whitelisted_cidrs = var.whitelisted_cidrs
+      whitelisted_cidrs = local.whitelisted_cidrs
       pg_host           = module.postgres_db.credentials.host
       pg_user           = module.postgres_db.credentials.username
       es_host           = local.es_nodename
       image_repo        = "${azurerm_container_registry.acr.login_server}/seqr"
       image_tag         = data.external.seqr_version.result.version
+      ref_account       = data.azurerm_storage_account.main.name
     })
   ]
 

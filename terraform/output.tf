@@ -14,6 +14,12 @@ output "AZURE_CREDENTIALS" {
   sensitive   = true
 }
 
+output "REFERENCE_CREDENTIALS" {
+  description = "The credentials of the Azure service principal used for reference storage account access."
+  value       = module.reference_sp.credentials
+  sensitive   = true
+}
+
 output "ELASTICSEARCH_CREDENTIALS" {
   description = "The credentials of the Elasticsearch cluster."
   value = {
@@ -53,7 +59,7 @@ output "seqr_version" {
   value       = coalesce(data.external.seqr_version.result.version, "SEQR container not built yet.")
 }
 
-output "whitelisted_cidrs" {
+output "whitelisted_cidr_map" {
   description = "The whitelisted CIDRs for the SEQR ingress endpoint."
-  value       = var.whitelisted_cidrs
+  value       = var.whitelisted_cidr_map
 }
