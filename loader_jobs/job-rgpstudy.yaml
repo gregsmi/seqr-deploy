@@ -1,0 +1,71 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seqr-loader
+  labels:
+    app: seqr-loader
+spec:
+  template:
+    spec:
+      containers:
+      - name: seqr-loader
+        imagePullPolicy: Always
+        image: msseqr01acr.azurecr.io/azure/pipeline-runner:latest
+        command: ["luigi", "--local-scheduler", "--module", "seqr_loading"]
+        args: ["SeqrMTToESTask",
+          "--source-paths", "abfss://test@raregen001sa.dfs.core.windows.net/rgp/2023_October_RGP_version_filtered_evagg_study_v2_no_backup.vcf.bgz",
+          "--dest-path", "abfss://seqr@raregen001sa.dfs.core.windows.net/RGP_study_test_16M.mt",
+          "--sample-type", "WGS",
+          "--dont-validate",
+          "--es-index-min-num-shards", "1",
+          "--es-index", "rgpstudytest16m",
+          "--es-password", "$(ELASTIC_SEARCH_PASSWORD)"
+        ]
+        env:
+          - name: ELASTIC_SEARCH_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: seqr-secrets
+                key: seqr_es_password
+          - name: LUIGI_CONFIG_PATH
+            value: "/luigi_configs/seqr-load-GRCh38.toml"
+        volumeMounts:
+          - name: ref-blobstore
+            mountPath: "/vep_data"
+            subPath: "vep/99.0"
+          - name: hadoop-creds
+            mountPath: /spark_configs/core-site.xml
+            subPath: core-site.xml
+            readOnly: true
+          - name: es-ca-volume
+            mountPath: /es-certs
+            readOnly: true
+        resources:
+          requests:
+            cpu: "4"
+            memory: "96Gi"
+
+      nodeSelector:
+        seqr.azure/pooltype: "compute"
+      tolerations:
+        - key: "seqr.azure/pooltype"
+          value: "compute"
+          effect: "NoSchedule"
+      restartPolicy: Never
+
+      volumes:
+        - name: ref-blobstore
+          persistentVolumeClaim:
+            claimName: reference-volume-claim
+        - name: hadoop-creds
+          secret:
+            secretName: hadoop-creds
+            items:
+            - key: core-site.xml
+              path: core-site.xml
+        - name: es-ca-volume
+          secret:
+            secretName: elasticsearch-master-certs
+            items:
+            - key: ca.crt
+              path: ca.crt
