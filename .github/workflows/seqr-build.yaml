@@ -47,6 +47,7 @@ jobs:
         docker build \
           --tag ${SEQR_IMAGE}:${IMAGE_TAG} \
           --tag ${SEQR_IMAGE}:latest \
+          --platform=linux/arm64 \
           -f seqr/deploy/docker/seqr/Dockerfile seqr
         docker push ${SEQR_IMAGE}:${IMAGE_TAG}
         docker push ${SEQR_IMAGE}:latest
