@@ -8,6 +8,16 @@ volumeClaimTemplate:
 secret:
   password: ${password}
 
+resources:
+  requests:
+    cpu: ${min_cpu}
+    memory: ${min_memory}
+  limits:
+    cpu: "4000m"
+    memory: "32Gi"
+
+replicas: ${replicas}
+  
 # This allows ES to accept https connections without username/password.
 # esConfig:
 #   elasticsearch.yml: |
