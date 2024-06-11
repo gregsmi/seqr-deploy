@@ -1,11 +1,10 @@
 locals {
-  es_nodename     = "elasticsearch-master"
-  es_storage_size = "30Gi"
+  es_nodename = "elasticsearch-master"
 }
 
 # Create a container for each elastic search node's persistent storage.
 resource "azurerm_storage_container" "es_data" {
-  count                 = 3
+  count                 = var.elasticsearch_config.replicas
   name                  = "es-data-${count.index}"
   storage_account_name  = data.azurerm_storage_account.main.name
   container_access_type = "private"
@@ -23,7 +22,7 @@ resource "kubernetes_persistent_volume" "es_data" {
   }
   spec {
     capacity = {
-      storage = local.es_storage_size
+      storage = var.elasticsearch_config.storage_size
     }
     access_modes                     = ["ReadWriteOnce"]
     persistent_volume_reclaim_policy = "Retain"
@@ -63,7 +62,7 @@ resource "kubernetes_persistent_volume_claim" "es_data" {
     access_modes = ["ReadWriteOnce"]
     resources {
       requests = {
-        storage = local.es_storage_size
+        storage = var.elasticsearch_config.storage_size
       }
     }
     volume_name        = "es-data-volume-${each.key}"
@@ -87,7 +86,10 @@ resource "helm_release" "elasticsearch" {
     templatefile("templates/elastic.yaml", {
       # default user created by chart is 'elastic' (not configurable)
       password     = random_password.elastic_password.result
-      storage_size = local.es_storage_size
+      storage_size = var.elasticsearch_config.storage_size
+      replicas     = var.elasticsearch_config.replicas
+      min_cpu      = var.elasticsearch_config.min_cpu
+      min_memory   = var.elasticsearch_config.min_memory
     })
   ]
 
@@ -98,11 +100,10 @@ resource "helm_release" "elasticsearch" {
 }
 
 resource "helm_release" "kibana" {
-  name            = "kibana"
-  repository      = "https://helm.elastic.co"
-  chart           = "kibana"
-  version         = "8.5.1"
-  cleanup_on_fail = true
+  name       = "kibana"
+  repository = "https://helm.elastic.co"
+  chart      = "kibana"
+  version    = "8.5.1"
 
   depends_on = [helm_release.elasticsearch]
 }
