@@ -8,13 +8,13 @@ resource "azurerm_kubernetes_cluster" "cluster" {
 
   default_node_pool {
     name           = "default"
-    vm_size        = "Standard_D2_v2"
+    vm_size        = var.default_vm_size
     vnet_subnet_id = var.subnet_id
     os_sku         = "AzureLinux"
 
     enable_auto_scaling = true
     min_count           = 1
-    max_count           = 5
+    max_count           = 8
 
     temporary_name_for_rotation = "tempdefault"
   }
@@ -38,7 +38,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "compute_pool" {
   os_sku                = "AzureLinux"
 
   enable_auto_scaling = true
-  min_count           = 0
+  min_count           = var.min_compute_nodes
   max_count           = 3
 
   node_labels = { "seqr.azure/pooltype" = "compute" }

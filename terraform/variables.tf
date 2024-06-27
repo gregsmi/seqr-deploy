@@ -42,3 +42,16 @@ variable "data_storage_accounts" {
   type        = map(string)
   default     = {}
 }
+# This is an optional set of config settings for the ElasticSearch service and loading process.
+variable "elasticsearch_config" {
+  description = "Map of config settings for ElasticSearch service and loading process."
+  type        = map(string)
+  default = {
+    replicas      = "3"
+    vm_size       = "Standard_D2_v2"
+    storage_size  = "3Gi"
+    min_cpu       = "500m"
+    min_memory    = "2Gi"
+    compute_nodes = 0
+  }
+}
