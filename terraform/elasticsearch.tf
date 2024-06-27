@@ -97,12 +97,12 @@ resource "helm_release" "elasticsearch" {
   ]
 }
 
-resource "helm_release" "kibana" {
-  name            = "kibana"
-  repository      = "https://helm.elastic.co"
-  chart           = "kibana"
-  version         = "8.5.1"
-  cleanup_on_fail = true
+# resource "helm_release" "kibana" {
+#   name            = "kibana"
+#   repository      = "https://helm.elastic.co"
+#   chart           = "kibana"
+#   version         = "8.5.1"
+#   cleanup_on_fail = true
 
-  depends_on = [helm_release.elasticsearch]
-}
+#   depends_on = [helm_release.elasticsearch]
+# }
