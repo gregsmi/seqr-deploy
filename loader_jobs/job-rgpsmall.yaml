@@ -10,16 +10,17 @@ spec:
       containers:
       - name: seqr-loader
         imagePullPolicy: Always
-        image: msseqr01acr.azurecr.io/azure/pipeline-runner:latest
+        image: msseqr01acr.azurecr.io/seqr-pipeline:latest
         command: ["luigi", "--local-scheduler", "--module", "seqr_loading"]
         args: ["SeqrMTToESTask",
           "--source-paths", "abfss://test@raregen001sa.dfs.core.windows.net/rgp/pilot_small.vcf.bgz",
           "--dest-path", "abfss://seqr@raregen001sa.dfs.core.windows.net/RGP_pilot_small.mt",
           "--sample-type", "WGS",
           "--dont-validate",
-          "--es-index-min-num-shards", "1",
+          "--es-index-min-num-shards", "4",
           "--es-index", "rgpsmall1",
-          "--es-password", "$(ELASTIC_SEARCH_PASSWORD)"
+          "--es-password", "$(ELASTIC_SEARCH_PASSWORD)",
+          "--es-timeout", "900"
         ]
         env:
           - name: ELASTIC_SEARCH_PASSWORD
