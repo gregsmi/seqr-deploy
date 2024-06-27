@@ -20,3 +20,13 @@ variable "secrets" {
   description = "Map of secrets (name => contents) to create within cluster."
   type        = map(any)
 }
+
+variable "default_vm_size" {
+  description = "VM size to use for default node pool."
+  type        = string
+}
+
+variable "min_compute_nodes" {
+  description = "Minimum number of nodes to run in the compute pool."
+  type        = number
+}
