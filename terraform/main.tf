@@ -65,7 +65,7 @@ module "k8s_cluster" {
   subnet_id                = azurerm_subnet.k8s_subnet.id
   secrets                  = local.k8s_secrets
   min_compute_nodes        = var.elasticsearch_config.compute_nodes
-  default_vm_size          = "Standard_D8ads_v5"
+  default_vm_size          = var.elasticsearch_config.vm_size
 }
 
 resource "azurerm_role_assignment" "k8s_to_acr" {
