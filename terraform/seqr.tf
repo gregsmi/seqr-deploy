@@ -32,8 +32,7 @@ resource "helm_release" "seqr" {
     module.postgres_db,
     helm_release.ingress_nginx,
     kubernetes_manifest.clusterissuer_letsencrypt,
-    helm_release.elasticsearch,
-    helm_release.kibana,
+    # helm_release.elasticsearch,
     helm_release.redis,
   ]
 }
