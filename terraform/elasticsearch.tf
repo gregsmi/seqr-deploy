@@ -94,6 +94,7 @@ resource "helm_release" "elasticsearch" {
   ]
 
   depends_on = [
+    module.k8s_cluster,
     kubernetes_persistent_volume.es_data,
     kubernetes_persistent_volume_claim.es_data
   ]

@@ -92,6 +92,8 @@ resource "helm_release" "redis" {
     name  = "auth.enabled"
     value = "false"
   }
+
+  depends_on = [module.k8s_cluster]
 }
 
 # Identity used for Github Action-based deployment of docker images.

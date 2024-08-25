@@ -37,6 +37,8 @@ resource "helm_release" "ingress_nginx" {
       dns_label  = local.fqdn_prefix
     })
   ]
+
+  depends_on = [module.k8s_cluster]
 }
 
 # Install cert-manager to enable letsencrypt TLS.

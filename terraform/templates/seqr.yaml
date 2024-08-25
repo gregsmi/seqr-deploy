@@ -23,8 +23,8 @@ image:
   repository: ${image_repo}
   tag: ${image_tag}
 
-# Enabling this makes seqr look for passwords in both kibana and ES secrets 
-# and mount the passwords in as KIBANA_ES_PASSWORD and SEQR_ES_PASSWORD.
+# Enabling this makes seqr look for passwords in K8s kibana-secrets and seqr-secrets
+# and mount the respective passwords in as KIBANA_ES_PASSWORD and SEQR_ES_PASSWORD.
 enable_elasticsearch_auth: true
 
 # Default ES Helm chart generates a self-signed cert so 
@@ -86,6 +86,7 @@ environment:
   ELASTICSEARCH_PROTOCOL: https
   # BUGBUG when auth is on the ES/kibana users are hardcoded to 'seqr'/'kibana' 
   # respectively but the default Helm user for ES & kibana is 'elastic'.
+  # Upstream PR to seqr in progress to fix this 09/24.
   KIBANA_ELASTICSEARCH_USER: elastic
   ELASTICSEARCH_USER: elastic
   AZURE_REF_STORAGE_ACCOUNT: ${ref_account}

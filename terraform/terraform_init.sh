@@ -186,7 +186,10 @@ main() {
   done
 
   echo "DEPLOYMENT_NAME = $DEPLOYMENT_NAME, LOCATION = $LOCATION"
+
   # Login to Azure using the specified tenant if not already logged in.
+  # Note, terraform recomments authenticating to az cli manually when running terraform locally,
+  # see: https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/managed_service_identity
   login_azure ${AAD_TENANT} ${AZURE_SUBSCRIPTION}
   if [[ ${login_only} == "true" ]]; then
     echo "Successfully logged in - exiting."
@@ -203,11 +206,6 @@ main() {
   SA_ACCESS_KEY=$(az storage account keys list --resource-group ${RESOURCE_GROUP_NAME} \
       --account-name ${STORAGE_ACCOUNT} --subscription ${AZURE_SUBSCRIPTION} | jq -r .[0].value) \
       || err "Failed to get access key for storage account ${STORAGE_ACCOUNT}"
-
-  # Login to Azure using the specified tenant if not already logged in.
-  # Note, terraform recomments authenticating to az cli manually when running terraform locally,
-  # see: https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/managed_service_identity
-  login_azure ${AAD_TENANT} ${AZURE_SUBSCRIPTION}
 
   # Suppress unnecessary interactive text.
   export TF_IN_AUTOMATION=true

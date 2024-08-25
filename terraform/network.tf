@@ -19,6 +19,4 @@ resource "azurerm_subnet" "pg_subnet" {
   address_prefixes     = ["10.40.0.0/24"]
   resource_group_name  = data.azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.default.name
-
-  private_endpoint_network_policies_enabled = true
 }

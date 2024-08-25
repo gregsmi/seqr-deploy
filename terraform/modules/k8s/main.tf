@@ -12,14 +12,18 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     vnet_subnet_id = var.subnet_id
     os_sku         = "AzureLinux"
 
-    enable_auto_scaling = true
-    min_count           = 1
-    max_count           = 8
+    auto_scaling_enabled = true
+    min_count            = 1
+    max_count            = 8
 
     temporary_name_for_rotation = "tempdefault"
+    # Set to default values to avoid spurious node pool updates.
+    upgrade_settings {
+      node_soak_duration_in_minutes = 0
+      drain_timeout_in_minutes      = 0
+      max_surge                     = "10%"
+    }
   }
-
-  automatic_channel_upgrade = "node-image"
 
   identity {
     type = "SystemAssigned"
@@ -37,9 +41,9 @@ resource "azurerm_kubernetes_cluster_node_pool" "compute_pool" {
   vm_size               = "Standard_E16-8ds_v5"
   os_sku                = "AzureLinux"
 
-  enable_auto_scaling = true
-  min_count           = var.min_compute_nodes
-  max_count           = 3
+  auto_scaling_enabled = true
+  min_count            = var.min_compute_nodes
+  max_count            = 3
 
   node_labels = { "seqr.azure/pooltype" = "compute" }
   node_taints = ["seqr.azure/pooltype=compute:NoSchedule"]
