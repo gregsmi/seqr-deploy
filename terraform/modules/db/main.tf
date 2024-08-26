@@ -25,6 +25,12 @@ resource "azurerm_postgresql_flexible_server" "server" {
   public_network_access_enabled = false
 }
 
+resource "azurerm_postgresql_flexible_server_configuration" "server_config" {
+  server_id = azurerm_postgresql_flexible_server.server.id
+  name      = "require_secure_transport"
+  value     = "off"
+}
+
 resource "azurerm_postgresql_flexible_server_database" "db" {
   for_each  = toset(var.database_names)
   name      = each.key

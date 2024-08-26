@@ -30,3 +30,18 @@ variable "min_compute_nodes" {
   description = "Minimum number of nodes to run in the compute pool."
   type        = number
 }
+
+variable "min_data_nodes" {
+  description = "Minimum number of nodes to run in the data pool."
+  type        = number
+}
+
+variable "compute_vm_size" {
+  description = "VM size to use for compute node pool."
+  type        = string
+}
+
+variable "data_vm_size" {
+  description = "VM size to use for data node pool."
+  type        = string
+}

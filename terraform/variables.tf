@@ -43,15 +43,17 @@ variable "data_storage_accounts" {
   default     = {}
 }
 # This is an optional set of config settings for the ElasticSearch service and loading process.
-variable "elasticsearch_config" {
-  description = "Map of config settings for ElasticSearch service and loading process."
+variable "k8s_config" {
+  description = "Map of config settings for k8s node pools."
   type        = map(string)
   default = {
-    replicas      = "3"
-    vm_size       = "Standard_D2_v2"
-    storage_size  = "3Gi"
-    min_cpu       = "500m"
-    min_memory    = "2Gi"
-    compute_nodes = 0
+    default_vm_size   = "Standard_D2_v2"
+    compute_vm_size   = "Standard_E16-8ds_v5",
+    compute_nodes     = 0
+    data_vm_size      = "Standard_E16-8ds_v5",
+    data_nodes        = "3"
+    data_storage_size = "3Gi"
+    data_min_cpu      = "500m"
+    data_min_memory   = "2Gi"
   }
 }

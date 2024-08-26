@@ -17,6 +17,13 @@ resources:
     memory: "32Gi"
 
 replicas: ${replicas}
+
+nodeSelector:
+  seqr.azure/pooltype: "database"
+tolerations:
+  - key: "seqr.azure/pooltype"
+    value: "database"
+    effect: "NoSchedule"
   
 # This allows ES to accept https connections without username/password.
 # esConfig:

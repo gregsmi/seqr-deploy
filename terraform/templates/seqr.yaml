@@ -90,3 +90,4 @@ environment:
   KIBANA_ELASTICSEARCH_USER: elastic
   ELASTICSEARCH_USER: elastic
   AZURE_REF_STORAGE_ACCOUNT: ${ref_account}
+  BASE_URL: "https://${fqdn}"

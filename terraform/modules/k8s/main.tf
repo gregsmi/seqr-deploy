@@ -38,7 +38,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "compute_pool" {
   name                  = "compute"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
   vnet_subnet_id        = var.subnet_id
-  vm_size               = "Standard_E16-8ds_v5"
+  vm_size               = var.compute_vm_size
   os_sku                = "AzureLinux"
 
   auto_scaling_enabled = true
@@ -47,6 +47,21 @@ resource "azurerm_kubernetes_cluster_node_pool" "compute_pool" {
 
   node_labels = { "seqr.azure/pooltype" = "compute" }
   node_taints = ["seqr.azure/pooltype=compute:NoSchedule"]
+}
+
+resource "azurerm_kubernetes_cluster_node_pool" "data_pool" {
+  name                  = "database"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
+  vnet_subnet_id        = var.subnet_id
+  vm_size               = var.data_vm_size
+  os_sku                = "AzureLinux"
+
+  auto_scaling_enabled = true
+  min_count            = var.min_data_nodes
+  max_count            = 12
+
+  node_labels = { "seqr.azure/pooltype" = "database" }
+  node_taints = ["seqr.azure/pooltype=database:NoSchedule"]
 }
 
 locals {

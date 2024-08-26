@@ -64,8 +64,11 @@ module "k8s_cluster" {
   node_resource_group_name = local.k8s_node_resource_group_name
   subnet_id                = azurerm_subnet.k8s_subnet.id
   secrets                  = local.k8s_secrets
-  min_compute_nodes        = var.elasticsearch_config.compute_nodes
-  default_vm_size          = var.elasticsearch_config.vm_size
+  min_compute_nodes        = var.k8s_config.compute_nodes
+  min_data_nodes           = var.k8s_config.data_nodes
+  default_vm_size          = var.k8s_config.default_vm_size
+  compute_vm_size          = var.k8s_config.compute_vm_size
+  data_vm_size             = var.k8s_config.data_vm_size
 }
 
 resource "azurerm_role_assignment" "k8s_to_acr" {

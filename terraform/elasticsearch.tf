@@ -4,7 +4,7 @@ locals {
 
 # Create a container for each elastic search node's persistent storage.
 resource "azurerm_storage_container" "es_data" {
-  count                 = var.elasticsearch_config.replicas
+  count                 = var.k8s_config.data_nodes
   name                  = "es-data-${count.index}"
   storage_account_name  = data.azurerm_storage_account.main.name
   container_access_type = "private"
@@ -22,7 +22,7 @@ resource "kubernetes_persistent_volume" "es_data" {
   }
   spec {
     capacity = {
-      storage = var.elasticsearch_config.storage_size
+      storage = var.k8s_config.data_storage_size
     }
     access_modes                     = ["ReadWriteOnce"]
     persistent_volume_reclaim_policy = "Retain"
@@ -62,7 +62,7 @@ resource "kubernetes_persistent_volume_claim" "es_data" {
     access_modes = ["ReadWriteOnce"]
     resources {
       requests = {
-        storage = var.elasticsearch_config.storage_size
+        storage = var.k8s_config.data_storage_size
       }
     }
     volume_name        = "es-data-volume-${each.key}"
@@ -86,10 +86,10 @@ resource "helm_release" "elasticsearch" {
     templatefile("templates/elastic.yaml", {
       # default user created by chart is 'elastic' (not configurable)
       password     = random_password.elastic_password.result
-      storage_size = var.elasticsearch_config.storage_size
-      replicas     = var.elasticsearch_config.replicas
-      min_cpu      = var.elasticsearch_config.min_cpu
-      min_memory   = var.elasticsearch_config.min_memory
+      storage_size = var.k8s_config.data_storage_size
+      replicas     = var.k8s_config.data_nodes
+      min_cpu      = var.k8s_config.data_min_cpu
+      min_memory   = var.k8s_config.data_min_memory
     })
   ]
 
