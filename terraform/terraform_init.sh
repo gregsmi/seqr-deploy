@@ -47,7 +47,7 @@ login_azure() {
     fi
   fi
 
-  local sub_name=$(az account show --subscription "${az_subscription}" | jq -r .name)
+  local -r sub_name=$(az account show --subscription "${az_subscription}" | jq -r .name)
   # Set the subscription so future commands don't need to specify it.
   echo "Setting subscription to $sub_name (${az_subscription})."
   az account set --subscription "${az_subscription}"
@@ -160,9 +160,10 @@ ensure_storage_container() {
 #######################################
 # Create TFVARS file for use in Terraform operations  
 #######################################
+readonly DEPLOYMENT_TFVARS="deployment.auto.tfvars.json"
 make_tfvars() {
   # Write out new default tfvars file.
-  cat << EOF > deployment.auto.tfvars.json
+  cat << EOF > ${DEPLOYMENT_TFVARS}
 {
   "deployment_name": "${DEPLOYMENT_NAME}",
   "location": "$LOCATION",
@@ -171,7 +172,7 @@ make_tfvars() {
 }
 EOF
 
-  echo "Variable file deployment.auto.tfvars.json created."
+  echo -e "${ANSI_GREEN}Variable file ${DEPLOYMENT_TFVARS} created/updated.${ANSI_RESET}"
 }
 
 main() {
@@ -185,27 +186,38 @@ main() {
     esac
   done
 
+  # Error if $DEPLOYMENT_NAME or $LOCATION are not set.
+  if [[ -z ${DEPLOYMENT_NAME} || -z ${LOCATION} ]]; then
+    err "DEPLOYMENT_NAME and LOCATION must be set in deployment.env."
+  fi
   echo "DEPLOYMENT_NAME = $DEPLOYMENT_NAME, LOCATION = $LOCATION"
+  # Error if $AAD_TENANT or $AZURE_SUBSCRIPTION are not set.
+  if [[ -z ${AAD_TENANT} || -z ${AZURE_SUBSCRIPTION} ]]; then
+    err "AAD_TENANT and AZURE_SUBSCRIPTION must be set in deployment.env."
+  fi
 
   # Login to Azure using the specified tenant if not already logged in.
   # Note, terraform recomments authenticating to az cli manually when running terraform locally,
   # see: https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/managed_service_identity
-  login_azure ${AAD_TENANT} ${AZURE_SUBSCRIPTION}
+  login_azure "${AAD_TENANT}" "${AZURE_SUBSCRIPTION}"
   if [[ ${login_only} == "true" ]]; then
-    echo "Successfully logged in - exiting."
+    echo -e "${ANSI_GREEN}Successfully logged in - exiting.${ANSI_RESET}"    
     exit 0
   fi
   # Create resource group if it doesn't exist.
-  ensure_resource_group ${RESOURCE_GROUP_NAME} ${LOCATION} ${create_resources} || exit
+  # shellcheck disable=SC2153
+  ensure_resource_group "${RESOURCE_GROUP_NAME}" "${LOCATION}" "${create_resources}" || exit
   # Create storage account for Terraform state if it doesn't exist.
-  ensure_storage_account ${STORAGE_ACCOUNT} ${RESOURCE_GROUP_NAME} ${LOCATION} ${create_resources} || exit
+  ensure_storage_account "${STORAGE_ACCOUNT}" "${RESOURCE_GROUP_NAME}" "${LOCATION}" "${create_resources}" || exit
   # Create tfstate container to store Terraform state if it doesn't exist.
-  ensure_storage_container ${STATE_CONTAINER} ${STORAGE_ACCOUNT} ${create_resources} || exit
+  ensure_storage_container "${STATE_CONTAINER}" "${STORAGE_ACCOUNT}" "${create_resources}" || exit
   # Get an access key to the storage account for Terraform state. Use jq to grab the 
   # "value" field of the first key. "-r" option gives raw output without quotes.
-  SA_ACCESS_KEY=$(az storage account keys list --resource-group ${RESOURCE_GROUP_NAME} \
-      --account-name ${STORAGE_ACCOUNT} --subscription ${AZURE_SUBSCRIPTION} | jq -r .[0].value) \
+  SA_ACCESS_KEY=$(az storage account keys list --resource-group "${RESOURCE_GROUP_NAME}" \
+      --account-name "${STORAGE_ACCOUNT}" --subscription "${AZURE_SUBSCRIPTION}" | jq -r .[0].value) \
       || err "Failed to get access key for storage account ${STORAGE_ACCOUNT}"
+  # echo "Infrastructure set up successful" in ANSI_GREEN color
+  echo -e "${ANSI_GREEN}Deployment infrastructure set up successful - initializing Terraform...${ANSI_RESET}"
 
   # Suppress unnecessary interactive text.
   export TF_IN_AUTOMATION=true
@@ -224,7 +236,7 @@ main() {
 delete_terraform_state() {
   2>/dev/null rm .terraform.lock.hcl
   2>/dev/null rm -rf .terraform
-  2>/dev/null rm terraform.tfvars
+  2>/dev/null rm ${DEPLOYMENT_TFVARS}
   echo "Local Terraform state deleted"
 }
 

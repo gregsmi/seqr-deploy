@@ -6,8 +6,8 @@ variable "resource_group" {
   })
 }
 
-variable "node_resource_group_name" {
-  description = "Name to use for AKS-created node resource group."
+variable "cluster_resource_name" {
+  description = "Name to use for AKS cluster and AKS-created node resource group."
   type        = string
 }
 

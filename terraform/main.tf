@@ -26,7 +26,7 @@ resource "random_password" "django_key" {
 }
 
 locals {
-  k8s_node_resource_group_name = "${var.deployment_name}-aks-rg"
+  k8s_cluster_name = "${var.deployment_name}-aks"
 
   k8s_secrets = {
     # Authorization credentials for accessing storage accounts via abfss.
@@ -60,15 +60,15 @@ locals {
 module "k8s_cluster" {
   source = "./modules/k8s"
 
-  resource_group           = data.azurerm_resource_group.rg
-  node_resource_group_name = local.k8s_node_resource_group_name
-  subnet_id                = azurerm_subnet.k8s_subnet.id
-  secrets                  = local.k8s_secrets
-  min_compute_nodes        = var.k8s_config.compute_nodes
-  min_data_nodes           = var.k8s_config.data_nodes
-  default_vm_size          = var.k8s_config.default_vm_size
-  compute_vm_size          = var.k8s_config.compute_vm_size
-  data_vm_size             = var.k8s_config.data_vm_size
+  resource_group        = data.azurerm_resource_group.rg
+  cluster_resource_name = local.k8s_cluster_name
+  subnet_id             = azurerm_subnet.k8s_subnet.id
+  secrets               = local.k8s_secrets
+  min_compute_nodes     = var.k8s_config.compute_nodes
+  min_data_nodes        = var.k8s_config.data_nodes
+  default_vm_size       = var.k8s_config.default_vm_size
+  compute_vm_size       = var.k8s_config.compute_vm_size
+  data_vm_size          = var.k8s_config.data_vm_size
 }
 
 resource "azurerm_role_assignment" "k8s_to_acr" {

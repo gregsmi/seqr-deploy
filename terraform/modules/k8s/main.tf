@@ -1,10 +1,10 @@
 
 resource "azurerm_kubernetes_cluster" "cluster" {
-  name                = "aks0"
+  name                = var.cluster_resource_name
   resource_group_name = var.resource_group.name
   location            = var.resource_group.location
-  node_resource_group = var.node_resource_group_name
-  dns_prefix          = "aks0"
+  node_resource_group = var.cluster_resource_name
+  dns_prefix          = var.cluster_resource_name
 
   default_node_pool {
     name           = "default"

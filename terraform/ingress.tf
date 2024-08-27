@@ -9,7 +9,7 @@ resource "azurerm_public_ip" "ingress" {
   name     = "ingress-ip"
   location = data.azurerm_resource_group.rg.location
   # IP resource has to be created in the k8s node resource group for proper permissions.
-  resource_group_name = local.k8s_node_resource_group_name
+  resource_group_name = local.k8s_cluster_name
   allocation_method   = "Static"
   sku                 = "Standard"
 
