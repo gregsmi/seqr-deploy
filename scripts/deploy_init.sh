@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# deploy_init.sh
+# This script initializes the deployment environment for a SEQR deployment on Azure.
+# It relies on the root deployment.env file (via script_utils.sh) to provide the necessary
+# environment variables and logs the user into Azure using the specified tenant/sub.
+# It ensures the existence of the necessary Azure resources for maintaining a
+# shared deployment (Resource Group, Storage Account, and Storage Container)
+# and initializes Terraform to use these resources for state management. It can
+# be run at any time to confirm or update the deployment environment.
+
 # shellcheck source=/dev/null
 # Read in the main deployment variables and utility functions.
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/script_utils.sh"
@@ -13,6 +22,16 @@ usage() {
   echo "./$(basename $0) [-c] --> initialize terraform for the local project"
   echo "    -c: create mode --> one-time init of a new project to create root resources"
 }
+
+# Process arguments.
+while getopts ":hcl" option; do
+  case "${option}" in
+    h) usage; exit 0;;
+    c) create_resources="true";;
+    l) login_only="true";;
+    ?) echo "Invalid option: -${OPTARG}."; usage; exit 1;;
+  esac
+done
 
 #######################################
 # Ensure existence of a Resource Group in Azure.
@@ -117,16 +136,6 @@ ensure_storage_container() {
     err "Container ${container_name} doesn't exist (run with '-c' for first-time initialization)."
   fi
 }
-
-# Process options.
-while getopts ":hcl" option; do
-  case "${option}" in
-    h) usage; exit 0;;
-    c) create_resources="true";;
-    l) login_only="true";;
-    ?) echo "Invalid option: -${OPTARG}."; usage; exit 1;;
-  esac
-done
 
 # shellcheck disable=SC2153
 echo "DEPLOYMENT_NAME = $DEPLOYMENT_NAME, LOCATION = $LOCATION"
