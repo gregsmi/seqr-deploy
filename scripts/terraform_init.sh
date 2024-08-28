@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# shellcheck source=/dev/null
+# Read in the main deployment variables and utility functions.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/script_utils.sh"
+
 #######################################
 # Print script usage
 #######################################
@@ -8,49 +12,6 @@ usage() {
   echo "./$(basename $0) -l   --> login-only - login to appropriate subscription/tenant and exit"
   echo "./$(basename $0) [-c] --> initialize terraform for the local project"
   echo "    -c: create mode --> one-time init of a new project to create root resources"
-}
-
-# ANSI escape codes for coloring.
-readonly ANSI_RED="\033[0;31m"
-readonly ANSI_GREEN="\033[0;32m"
-readonly ANSI_RESET="\033[0;0m"
-
-#######################################
-# Print error message and exit
-# Arguments:
-#   Message to print.
-#######################################
-err() {
-  echo -e "${ANSI_RED}ERROR: $*${ANSI_RESET}" >&2
-  exit 1
-}
-
-#######################################
-# Login to Azure using the specified tenant 
-# and set the specified subscription.
-# Arguments:
-#   ID of a tenant to login to.
-#   ID of subscription to set.
-#######################################
-login_azure() {
-  local aad_tenant="$1"
-  local az_subscription="$2"
-
-  # Check if already logged in by trying to get an access token with the specified tenant.
-  2>/dev/null az account get-access-token --tenant "${aad_tenant}" --output none
-  if [[ $? -ne 0 ]] ; then
-    echo "Login required to authenticate with Azure."
-    echo "Attempting to login to Tenant: ${aad_tenant}"
-    az login --output none --tenant "${aad_tenant}"
-    if [[ $? -ne 0 ]]; then
-      err "Failed to authenticate with Azure"
-    fi
-  fi
-
-  local -r sub_name=$(az account show --subscription "${az_subscription}" | jq -r .name)
-  # Set the subscription so future commands don't need to specify it.
-  echo "Setting subscription to $sub_name (${az_subscription})."
-  az account set --subscription "${az_subscription}"
 }
 
 #######################################
@@ -157,95 +118,61 @@ ensure_storage_container() {
   fi
 }
 
-#######################################
-# Create TFVARS file for use in Terraform operations  
-#######################################
-readonly DEPLOYMENT_TFVARS="deployment.auto.tfvars.json"
-make_tfvars() {
-  # Write out new default tfvars file.
-  cat << EOF > ${DEPLOYMENT_TFVARS}
+# Process options.
+while getopts ":hcl" option; do
+  case "${option}" in
+    h) usage; exit 0;;
+    c) create_resources="true";;
+    l) login_only="true";;
+    ?) echo "Invalid option: -${OPTARG}."; usage; exit 1;;
+  esac
+done
+
+# shellcheck disable=SC2153
+echo "DEPLOYMENT_NAME = $DEPLOYMENT_NAME, LOCATION = $LOCATION"
+
+# Login to Azure using the specified tenant if not already logged in.
+# Note, terraform recomments authenticating to az cli manually when running terraform locally,
+# see: https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/managed_service_identity
+login_azure "${AZURE_TENANT}" "${AZURE_SUBSCRIPTION}"
+if [[ ${login_only} == "true" ]]; then
+  success "Successfully logged in - exiting."    
+  exit 0
+fi
+# Create resource group if it doesn't exist.
+# shellcheck disable=SC2153
+ensure_resource_group "${RESOURCE_GROUP_NAME}" "${LOCATION}" "${create_resources}" || exit
+# Create storage account for Terraform state if it doesn't exist.
+ensure_storage_account "${STORAGE_ACCOUNT}" "${RESOURCE_GROUP_NAME}" "${LOCATION}" "${create_resources}" || exit
+# Create tfstate container to store Terraform state if it doesn't exist.
+ensure_storage_container "${STATE_CONTAINER}" "${STORAGE_ACCOUNT}" "${create_resources}" || exit
+# Get an access key to the storage account for Terraform state. Use jq to grab the 
+# "value" field of the first key. "-r" option gives raw output without quotes.
+SA_ACCESS_KEY=$(az storage account keys list --resource-group "${RESOURCE_GROUP_NAME}" \
+    --account-name "${STORAGE_ACCOUNT}" --subscription "${AZURE_SUBSCRIPTION}" | jq -r .[0].value) \
+    || err "Failed to get access key for storage account ${STORAGE_ACCOUNT}"
+success "Deployment infrastructure setup successful - initializing Terraform..."
+
+# Suppress unnecessary interactive text.
+export TF_IN_AUTOMATION=true
+# Configure Terraform backend (azurerm) to use Azure blob container to 
+# store state. This configuration is persisted in local tfstate.
+terraform -chdir="${DEPLOY_ROOT_DIR}"/terraform init -reconfigure -upgrade \
+  -backend-config="storage_account_name=${STORAGE_ACCOUNT}" \
+  -backend-config="container_name=${STATE_CONTAINER}" \
+  -backend-config="access_key=${SA_ACCESS_KEY}" \
+  -backend-config="key=deploy.tfstate"
+
+# Create/update Terraform variables file.
+# Write out new default tfvars file.
+cat << EOF > "${DEPLOY_ROOT_DIR}"/terraform/deployment.auto.tfvars.json
 {
   "deployment_name": "${DEPLOYMENT_NAME}",
   "location": "$LOCATION",
-  "tenant_id": "${AAD_TENANT}",
+  "tenant_id": "${AZURE_TENANT}",
   "subscription_id": "${AZURE_SUBSCRIPTION}"
 }
 EOF
 
-  echo -e "${ANSI_GREEN}Variable file ${DEPLOYMENT_TFVARS} created/updated.${ANSI_RESET}"
-}
+success "Initialization complete - variable file deployment.auto.tfvars.json created/updated."
 
-main() {
-  # Process options.
-  while getopts ":hcl" option; do
-    case "${option}" in
-      h) usage; exit 0;;
-      c) create_resources="true";;
-      l) login_only="true";;
-      ?) echo "Invalid option: -${OPTARG}."; usage; exit 1;;
-    esac
-  done
-
-  # Error if $DEPLOYMENT_NAME or $LOCATION are not set.
-  if [[ -z ${DEPLOYMENT_NAME} || -z ${LOCATION} ]]; then
-    err "DEPLOYMENT_NAME and LOCATION must be set in deployment.env."
-  fi
-  echo "DEPLOYMENT_NAME = $DEPLOYMENT_NAME, LOCATION = $LOCATION"
-  # Error if $AAD_TENANT or $AZURE_SUBSCRIPTION are not set.
-  if [[ -z ${AAD_TENANT} || -z ${AZURE_SUBSCRIPTION} ]]; then
-    err "AAD_TENANT and AZURE_SUBSCRIPTION must be set in deployment.env."
-  fi
-
-  # Login to Azure using the specified tenant if not already logged in.
-  # Note, terraform recomments authenticating to az cli manually when running terraform locally,
-  # see: https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/managed_service_identity
-  login_azure "${AAD_TENANT}" "${AZURE_SUBSCRIPTION}"
-  if [[ ${login_only} == "true" ]]; then
-    echo -e "${ANSI_GREEN}Successfully logged in - exiting.${ANSI_RESET}"    
-    exit 0
-  fi
-  # Create resource group if it doesn't exist.
-  # shellcheck disable=SC2153
-  ensure_resource_group "${RESOURCE_GROUP_NAME}" "${LOCATION}" "${create_resources}" || exit
-  # Create storage account for Terraform state if it doesn't exist.
-  ensure_storage_account "${STORAGE_ACCOUNT}" "${RESOURCE_GROUP_NAME}" "${LOCATION}" "${create_resources}" || exit
-  # Create tfstate container to store Terraform state if it doesn't exist.
-  ensure_storage_container "${STATE_CONTAINER}" "${STORAGE_ACCOUNT}" "${create_resources}" || exit
-  # Get an access key to the storage account for Terraform state. Use jq to grab the 
-  # "value" field of the first key. "-r" option gives raw output without quotes.
-  SA_ACCESS_KEY=$(az storage account keys list --resource-group "${RESOURCE_GROUP_NAME}" \
-      --account-name "${STORAGE_ACCOUNT}" --subscription "${AZURE_SUBSCRIPTION}" | jq -r .[0].value) \
-      || err "Failed to get access key for storage account ${STORAGE_ACCOUNT}"
-  # echo "Infrastructure set up successful" in ANSI_GREEN color
-  echo -e "${ANSI_GREEN}Deployment infrastructure set up successful - initializing Terraform...${ANSI_RESET}"
-
-  # Suppress unnecessary interactive text.
-  export TF_IN_AUTOMATION=true
-  # Configure Terraform backend (azurerm) to use Azure blob container to 
-  # store state. This configuration is persisted in local tfstate.
-  terraform init -reconfigure -upgrade \
-    -backend-config="storage_account_name=${STORAGE_ACCOUNT}" \
-    -backend-config="container_name=${STATE_CONTAINER}" \
-    -backend-config="access_key=${SA_ACCESS_KEY}" \
-    -backend-config="key=deploy.tfstate"
-
-  # Create/update Terraform variables file.
-  make_tfvars
-}
-
-delete_terraform_state() {
-  2>/dev/null rm .terraform.lock.hcl
-  2>/dev/null rm -rf .terraform
-  2>/dev/null rm ${DEPLOYMENT_TFVARS}
-  echo "Local Terraform state deleted"
-}
-
-# Make pipelined operations fail out early.
-set -o pipefail
-# Read variables from deployment.env file. Exit if file does not exist.
-if [[ ! -f ../deployment.env ]]; then
-  err "File deployment.env not found. Please create it from template file deployment.template.env."
-fi
-source ../deployment.env
-# Run main.
-main "$@"
