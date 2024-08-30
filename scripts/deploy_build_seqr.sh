@@ -31,4 +31,4 @@ echo "${image_tag}" | 1>/dev/null az storage blob upload --data @- \
     --name seqr.version \
     --overwrite \
     --only-show-errors
-success Successfully built and updated - run deploy_apply.sh to deploy the new image.
+success Successfully updated version - run deploy_apply.sh to deploy the new image.
