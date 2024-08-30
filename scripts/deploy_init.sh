@@ -48,21 +48,15 @@ ensure_resource_group() {
 
   echo "Checking if resource group ${resource_group_name} exists..." 
   # When a resource group doesn't exist, the `az group exists` command returns an authorization error.
-  rg_exists=$(az group exists -n "${resource_group_name}")
-  if [[ $? -ne 0 ]]; then
-    err "Failed to check for existence of resource group ${resource_group_name}. Probably a permissions issue."
-  fi
-
+  rg_exists=$(az group exists -n "${resource_group_name}") \
+    || err "Failed to check for existence of resource group. Probably a permissions issue."
   if [[ ${rg_exists} == "true" ]]; then
-    echo "Resource group ${resource_group_name} already exists."
+    echo "Resource group already exists."
   elif [[ ${create} == "true" ]]; then
-    echo "Resource group ${resource_group_name} does not exist - creating..."
-    1>/dev/null az group create --name "${resource_group_name}" --location "${location}"
-    if [[ $? -ne 0 ]]; then
-      err "Failed to create resource group ${resource_group_name}"
-    fi
+    echo "Resource group does not exist - creating..."
+    1>/dev/null az group create --name "${resource_group_name}" --location "${location}" || err "Failed to create resource group"
   else
-    err "Resource group ${resource_group_name} doesn't exist (run with '-c' for first-time initialization)."
+    err "Resource group doesn't exist (run with '-c' for first-time initialization)."
   fi
 }
 
@@ -83,21 +77,29 @@ ensure_storage_account() {
 
   echo "Checking if storage account ${storage_account_name} exists..."
   # Uses jq to parse the json output and grab the "reason" field. -r for raw so there aren't quotes in the string.
-  sa_reason=$(az storage account check-name -n "${storage_account_name}" | jq -r .reason)
-  if [[ $? -ne 0 ]]; then
-    err "Failed to check for existence of storage account ${storage_account_name}. Make sure Microsoft.Storage provider is registered."
-  fi
-
+  sa_reason=$(az storage account check-name -n "${storage_account_name}" | jq -r .reason) \
+    || err "Failed to check for existence of storage account. Make sure Microsoft.Storage provider is registered."
   if [[ ${sa_reason} == "AlreadyExists" ]]; then
-    echo "Storage account ${storage_account_name} exists."
+    echo "Storage account exists."
   elif [[ ${create} == "true" ]]; then
-    echo "Storage account ${storage_account_name} does not exist - creating..."
-    1>/dev/null az storage account create --name "${storage_account_name}" --resource-group "${resource_group_name}" --location "${location}" --allow-blob-public-access false
-    if [[ $? -ne 0 ]]; then
-      err "Failed to create storage group ${storage_account_name}"
-    fi
+    echo "Storage account does not exist - creating..."
+    1>/dev/null az storage account create \
+      --name "${storage_account_name}" \
+      --resource-group "${resource_group_name}" \
+      --location "${location}" \
+      --allow-blob-public-access false \
+      || err "Failed to create storage account"
+
+    echo "Granting Storage Blob Data Owner role on ${storage_account_name} to current user..."
+    user_id=$(az ad signed-in-user show --query id -o tsv) || err "Failed to get signed-in user id."
+    storage_account_id=$(az storage account show --name "${storage_account_name}" --resource-group "${resource_group_name}" --query id -o tsv)
+    1>/dev/null az role assignment create --only-show-errors \
+      --assignee "$user_id" \
+      --role "Storage Blob Data Owner" \
+      --scope "$storage_account_id" \
+      || err "Failed to grant Storage Blob Data Owner role to user ${user_id}."
   else
-    err "Storage account ${storage_account_name} doesn't exist (run with '-c' for first-time initialization)."
+    err "Storage account doesn't exist (run with '-c' for first-time initialization)."
   fi
 }
 
@@ -117,23 +119,23 @@ ensure_storage_container() {
   echo "Checking if storage container ${container_name} exists..."
   # User should have "Storage Blob Data Contributor" role.
   # Uses jq to parse the json output and grab the "exists" field.
-  container_exists=$(az storage container exists -n "${container_name}" --account-name "${storage_account_name}" --auth-mode login | jq .exists)
-  if [[ $? -ne 0 ]]; then
-    err "Failed to check for existence of container ${container_name} in storage account ${storage_account_name}. Probably a permissions issue."
-  fi
+  container_exists=$(az storage container exists -n "${container_name}" \
+    --account-name "${storage_account_name}" \
+    --auth-mode login | jq .exists) \
+    || err "Failed to check for existence of container. Probably a permissions issue."
 
   if [[ ${container_exists} != "false" ]]; then
-      echo "Container ${container_name} exists."
+      echo "Container exists."
   elif [[ ${create} == "true" ]]; then
-      echo "Creating container ${container_name}"
-      1>/dev/null az storage container create -n "${container_name}" --account-name "${storage_account_name}" --auth-mode login
-      if [[ $? -ne 0 ]]; then
-        err "Failed to create storage container ${container_name}"
-      fi
-      # Wait for storage container to create.
-      sleep 5
+      echo "Container does not exist - creating..."
+      1>/dev/null az storage container create -n "${container_name}" \
+        --account-name "${storage_account_name}" \
+        --auth-mode login \
+        || err "Failed to create storage container"
+      # Wait for storage container to create??
+      sleep 10
   else
-    err "Container ${container_name} doesn't exist (run with '-c' for first-time initialization)."
+    err "Container doesn't exist (run with '-c' for first-time initialization)."
   fi
 }
 
@@ -155,12 +157,7 @@ ensure_resource_group "${RESOURCE_GROUP_NAME}" "${LOCATION}" "${create_resources
 ensure_storage_account "${STORAGE_ACCOUNT}" "${RESOURCE_GROUP_NAME}" "${LOCATION}" "${create_resources}" || exit
 # Create tfstate container to store Terraform state if it doesn't exist.
 ensure_storage_container "${STATE_CONTAINER}" "${STORAGE_ACCOUNT}" "${create_resources}" || exit
-# Get an access key to the storage account for Terraform state. Use jq to grab the 
-# "value" field of the first key. "-r" option gives raw output without quotes.
-SA_ACCESS_KEY=$(az storage account keys list --resource-group "${RESOURCE_GROUP_NAME}" \
-    --account-name "${STORAGE_ACCOUNT}" --subscription "${AZURE_SUBSCRIPTION}" | jq -r .[0].value) \
-    || err "Failed to get access key for storage account ${STORAGE_ACCOUNT}"
-success "Deployment infrastructure setup successful - initializing Terraform..."
+success Deployment infrastructure setup complete - initializing Terraform...
 
 # Suppress unnecessary interactive text.
 export TF_IN_AUTOMATION=true
@@ -169,11 +166,10 @@ export TF_IN_AUTOMATION=true
 terraform -chdir="${DEPLOY_ROOT_DIR}"/terraform init -reconfigure -upgrade \
   -backend-config="storage_account_name=${STORAGE_ACCOUNT}" \
   -backend-config="container_name=${STATE_CONTAINER}" \
-  -backend-config="access_key=${SA_ACCESS_KEY}" \
+  -backend-config="use_azuread_auth=true" \
   -backend-config="key=deploy.tfstate"
 
 # Create/update Terraform variables file.
-# Write out new default tfvars file.
 cat << EOF > "${DEPLOY_ROOT_DIR}"/terraform/deployment.auto.tfvars.json
 {
   "deployment_name": "${DEPLOYMENT_NAME}",
@@ -183,5 +179,5 @@ cat << EOF > "${DEPLOY_ROOT_DIR}"/terraform/deployment.auto.tfvars.json
 }
 EOF
 
-success "Initialization complete - variable file deployment.auto.tfvars.json created/updated."
+success Initialization complete - variable file deployment.auto.tfvars.json created/updated.
 

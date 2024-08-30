@@ -23,12 +23,12 @@ docker build \
 docker push "${image_name}"
 success Successfully built and pushed latest SEQR Docker image: "${image_name}"
 
-# Upload image_tag to seqr.version text file.
-echo ${image_tag} | az storage blob upload --data @- \
+echo Uploading new image tag to seqr.version state file for pickup by Terraform...
+echo "${image_tag}" | 1>/dev/null az storage blob upload --data @- \
+    --auth-mode login \
     --account-name "${STORAGE_ACCOUNT}" \
     --container-name "${STATE_CONTAINER}" \
     --name seqr.version \
-    --overwrite
-success Successfully uploaded image tag to seqr.version file.
-
-success Run 'terraform apply' to deploy the image.
+    --overwrite \
+    --only-show-errors
+success Successfully built and updated - run deploy_apply.sh to deploy the new image.
