@@ -6,6 +6,12 @@ resource "azurerm_kubernetes_cluster" "cluster" {
   node_resource_group = var.cluster_resource_name
   dns_prefix          = var.cluster_resource_name
 
+  role_based_access_control_enabled = true
+  azure_active_directory_role_based_access_control {
+    admin_group_object_ids = [azuread_group.admin.id]
+    azure_rbac_enabled      = true
+  }
+
   default_node_pool {
     name           = "default"
     vm_size        = var.default_vm_size
@@ -64,6 +70,27 @@ resource "azurerm_kubernetes_cluster_node_pool" "data_pool" {
   node_taints = ["seqr.azure/pooltype=database:NoSchedule"]
 }
 
+# Create an AzureAD group for cluster admins.
+data "azuread_client_config" "current" {}
+resource "azuread_group" "admin" {
+  display_name     = "${var.cluster_resource_name}-admin"
+  owners           = [data.azuread_client_config.current.object_id]
+  members          = [data.azuread_client_config.current.object_id]
+  security_enabled = true
+
+  lifecycle {
+    # Allow additional members to be added outside of Terraform.
+    ignore_changes = [members]
+  }
+}
+
+# Assign the AzureAD group as a cluster admin.
+resource "azurerm_role_assignment" "cluster_admin" {
+  scope                = azurerm_kubernetes_cluster.cluster.id
+  role_definition_name = "Azure Kubernetes Service Cluster Admin Role"
+  principal_id         = azuread_group.admin.object_id
+}
+
 locals {
   config = {
     host = "https://${azurerm_kubernetes_cluster.cluster.fqdn}"
@@ -94,4 +121,6 @@ resource "kubernetes_secret" "secrets" {
     name = each.key
   }
   data = each.value
+
+  depends_on = [azurerm_role_assignment.cluster_admin]
 }

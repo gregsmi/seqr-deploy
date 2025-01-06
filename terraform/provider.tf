@@ -25,6 +25,11 @@ terraform {
   backend "azurerm" {}
 }
 
+provider "azuread" {
+  tenant_id = var.tenant_id
+  use_cli   = true
+}
+
 provider "azurerm" {
   tenant_id       = var.tenant_id
   subscription_id = var.subscription_id
