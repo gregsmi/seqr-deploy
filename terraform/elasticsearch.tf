@@ -97,6 +97,12 @@ resource "helm_release" "elasticsearch" {
     kubernetes_persistent_volume.es_data,
     kubernetes_persistent_volume_claim.es_data
   ]
+
+  lifecycle {
+    ignore_changes = [
+      values,
+    ]
+  }
 }
 
 resource "helm_release" "kibana" {

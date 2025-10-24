@@ -75,4 +75,8 @@ resource "kubernetes_secret" "secrets" {
     name = each.key
   }
   data = each.value
+
+  lifecycle {
+    ignore_changes = [data]
+  }
 }
